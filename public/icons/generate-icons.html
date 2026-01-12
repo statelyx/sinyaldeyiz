@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Generate Icons</title>
+  <style>
+    body { margin: 0; padding: 20px; background: #1e293b; font-family: Arial, sans-serif; }
+    .icon-container { display: inline-flex; flex-direction: column; align-items: center; margin: 10px; }
+    .icon { 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      border-radius: 20%; 
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      position: relative;
+      overflow: hidden;
+    }
+    .icon::before {
+      content: '🚗';
+      font-size: 40%;
+      position: absolute;
+      bottom: 20%;
+    }
+    .icon::after {
+      content: '📡';
+      font-size: 30%;
+      position: absolute;
+      top: 20%;
+    }
+    .label { color: white; margin-top: 5px; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <h1 style="color: white;">Sinyaldeyiz App Icons</h1>
+  <p style="color: #94a3b8;">Open this file in a browser and take screenshots at each size.</p>
+  
+  <div class="icon-container">
+    <div class="icon" style="width: 512px; height: 512px;"></div>
+    <span class="label">512x512</span>
+  </div>
+  
+  <div class="icon-container">
+    <div class="icon" style="width: 384px; height: 384px;"></div>
+    <span class="label">384x384</span>
+  </div>
+  
+  <div class="icon-container">
+    <div class="icon" style="width: 192px; height: 192px;"></div>
+    <span class="label">192x192</span>
+  </div>
+  
+  <div class="icon-container">
+    <div class="icon" style="width: 152px; height: 152px;"></div>
+    <span class="label">152x152</span>
+  </div>
+  
+  <div class="icon-container">
+    <div class="icon" style="width: 144px; height: 144px;"></div>
+    <span class="label">144x144</span>
+  </div>
+  
+  <div class="icon-container">
+    <div class="icon" style="width: 128px; height: 128px;"></div>
+    <span class="label">128x128</span>
+  </div>
+  
+  <div class="icon-container">
+    <div class="icon" style="width: 96px; height: 96px;"></div>
+    <span class="label">96x96</span>
+  </div>
+  
+  <div class="icon-container">
+    <div class="icon" style="width: 72px; height: 72px;"></div>
+    <span class="label">72x72</span>
+  </div>
+</body>
+</html>
