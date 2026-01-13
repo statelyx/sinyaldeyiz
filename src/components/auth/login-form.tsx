@@ -37,7 +37,7 @@ export function LoginForm() {
           .single()
 
         // Redirect based on onboarding status
-        if (!profile?.age || !profile?.vehicles || profile.vehicles.length === 0) {
+        if (!(profile as any)?.age || !(profile as any)?.vehicles || (profile as any).vehicles.length === 0) {
           router.push('/onboarding')
         } else {
           router.push('/app')
