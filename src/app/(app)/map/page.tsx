@@ -46,7 +46,7 @@ export default function MapPage() {
         <div className="h-screen flex flex-col relative">
             {/* Weather Widgets - Top Bar */}
             <div className="absolute top-2 left-2 right-2 z-20 lg:top-4 lg:left-4 lg:right-4">
-                <WeatherWidgets userLocation={userLocation} compact />
+                <WeatherWidgets location={userLocation} />
             </div>
 
             {/* Hotspot Alert */}
@@ -67,7 +67,6 @@ export default function MapPage() {
             <div className="absolute bottom-24 right-4 z-30 lg:bottom-8">
                 <SignalButton
                     onSignalChange={handleSignalChange}
-                    variant="fab"
                 />
             </div>
 
