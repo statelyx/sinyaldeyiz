@@ -91,7 +91,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const { data, error } = await supabase
         .from('profiles')
-        .upsert(newProfile)
+        .upsert(newProfile as any)
         .select()
         .single()
 
@@ -224,8 +224,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     try {
       const supabase = createSupabase()
-      const { error } = await supabase
-        .from('profiles')
+      const { error } = await (supabase
+        .from('profiles') as any)
         .update({
           ...updates,
           updated_at: new Date().toISOString(),
