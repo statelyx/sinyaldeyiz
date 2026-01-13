@@ -120,7 +120,7 @@ export function AuthModal({ isOpen, onClose, mode, onModeChange }: AuthModalProp
 
                     onClose()
 
-                    if (profile?.onboarding_completed || profile?.nickname) {
+                    if ((profile as any)?.onboarding_completed || (profile as any)?.nickname) {
                         router.push('/dashboard')
                     } else {
                         router.push('/onboarding')
