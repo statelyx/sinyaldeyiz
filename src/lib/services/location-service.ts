@@ -64,7 +64,7 @@ export async function startSignal(location: LocationData): Promise<{ success: bo
 
         const { error } = await supabase
             .from('location_status')
-            .upsert(insertData, { onConflict: 'user_id' })
+            .upsert(insertData as any, { onConflict: 'user_id' })
 
         if (error) {
             console.error('Error starting signal:', error)
@@ -110,7 +110,7 @@ export async function stopSignal(): Promise<{ success: boolean; error?: string }
 
         const { error } = await supabase
             .from('location_status')
-            .update(updateData)
+            .update(updateData as any)
             .eq('user_id', user.id)
 
         if (error) {
@@ -270,7 +270,7 @@ export async function updateLocation(location: LocationData): Promise<{ success:
 
         const { error } = await supabase
             .from('location_status')
-            .update(updateData)
+            .update(updateData as any)
             .eq('user_id', user.id)
             .eq('is_visible', true)
 
