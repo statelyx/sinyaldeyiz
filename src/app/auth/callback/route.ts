@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
                     onboarding_completed: false,
                     created_at: new Date().toISOString(),
                     updated_at: new Date().toISOString(),
-                })
+                } as any)
 
                 // New user - go to onboarding
                 return NextResponse.redirect(`${origin}/onboarding`)

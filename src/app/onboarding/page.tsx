@@ -195,7 +195,7 @@ export default function OnboardingPage() {
           avatar_url: selectedAvatar,
           onboarding_completed: true,
           updated_at: new Date().toISOString(),
-        })
+        } as any)
 
       if (profileError) throw profileError
 
@@ -210,7 +210,7 @@ export default function OnboardingPage() {
           vehicle_type: vehicleType,
           nickname: `${brand} ${model || ''}`.trim(),
           is_primary: true,
-        })
+        } as any)
 
       if (vehicleError) {
         console.error('Vehicle save error:', vehicleError)
