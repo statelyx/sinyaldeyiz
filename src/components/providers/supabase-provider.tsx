@@ -80,7 +80,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const newProfile = {
         id: user.id,
-        email: user.email,
+        email: user.email || null,
         nickname: null,
         provider: provider as 'google' | 'email' | 'guest',
         is_guest: false,
@@ -89,9 +89,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         updated_at: new Date().toISOString(),
       }
 
-      const { data, error } = await supabase
-        .from('profiles')
-        .upsert(newProfile as any)
+      const { data, error } = await (supabase
+        .from('profiles') as any)
+        .upsert(newProfile)
         .select()
         .single()
 

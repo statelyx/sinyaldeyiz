@@ -1,9 +1,4 @@
 import { createSupabase, MOCK_DATA } from '@/lib/supabase/client'
-import type { Database } from '@/types/database'
-
-type LocationStatus = Database['public']['Tables']['location_status']['Row']
-type LocationStatusInsert = Database['public']['Tables']['location_status']['Insert']
-type LocationStatusUpdate = Database['public']['Tables']['location_status']['Update']
 
 export interface VisibleUser {
     user_id: string
@@ -49,7 +44,7 @@ export async function startSignal(location: LocationData): Promise<{ success: bo
         const expiresAt = new Date(now.getTime() + 60 * 60 * 1000)
         const geohash = generateSimpleGeohash(location.lat, location.lon)
 
-        const insertData: LocationStatusInsert = {
+        const insertData = {
             user_id: user.id,
             is_visible: true,
             visibility_duration: 60,
@@ -62,9 +57,9 @@ export async function startSignal(location: LocationData): Promise<{ success: bo
             updated_at: now.toISOString(),
         }
 
-        const { error } = await supabase
-            .from('location_status')
-            .upsert(insertData as any, { onConflict: 'user_id' })
+        const { error } = await (supabase
+            .from('location_status') as any)
+            .upsert(insertData, { onConflict: 'user_id' })
 
         if (error) {
             console.error('Error starting signal:', error)
@@ -98,7 +93,7 @@ export async function stopSignal(): Promise<{ success: boolean; error?: string }
             return { success: false, error: 'Kullanıcı oturumu bulunamadı' }
         }
 
-        const updateData: LocationStatusUpdate = {
+        const updateData = {
             is_visible: false,
             expires_at: null,
             lat: null,
@@ -108,9 +103,9 @@ export async function stopSignal(): Promise<{ success: boolean; error?: string }
             updated_at: new Date().toISOString(),
         }
 
-        const { error } = await supabase
-            .from('location_status')
-            .update(updateData as any)
+        const { error } = await (supabase
+            .from('location_status') as any)
+            .update(updateData)
             .eq('user_id', user.id)
 
         if (error) {
@@ -145,8 +140,8 @@ export async function checkSignalStatus(): Promise<{ isActive: boolean; expiresA
             return { isActive: false }
         }
 
-        const { data, error } = await supabase
-            .from('location_status')
+        const { data, error } = await (supabase
+            .from('location_status') as any)
             .select('is_visible, expires_at')
             .eq('user_id', user.id)
             .single()
@@ -259,7 +254,7 @@ export async function updateLocation(location: LocationData): Promise<{ success:
 
         const geohash = generateSimpleGeohash(location.lat, location.lon)
 
-        const updateData: LocationStatusUpdate = {
+        const updateData = {
             lat: location.lat,
             lon: location.lon,
             geohash,
@@ -268,9 +263,9 @@ export async function updateLocation(location: LocationData): Promise<{ success:
             updated_at: new Date().toISOString(),
         }
 
-        const { error } = await supabase
-            .from('location_status')
-            .update(updateData as any)
+        const { error } = await (supabase
+            .from('location_status') as any)
+            .update(updateData)
             .eq('user_id', user.id)
             .eq('is_visible', true)
 

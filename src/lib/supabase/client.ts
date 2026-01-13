@@ -1,6 +1,5 @@
-import { createBrowserClient } from '@supabase/ssr'
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
-import { Database } from '@/types/database'
+import type { Database } from '@/types/database'
 
 // Set to false to use real Supabase, true for mock data
 const MOCK_MODE = true
@@ -27,7 +26,7 @@ export function getSupabaseBrowserClient(): SupabaseClient<Database> {
       throw new Error('Missing Supabase environment variables')
     }
 
-    client = createBrowserClient<Database>(supabaseUrl, supabaseAnonKey)
+    client = createClient<Database>(supabaseUrl, supabaseAnonKey)
   }
 
   return client

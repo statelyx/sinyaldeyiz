@@ -1,8 +1,8 @@
-import { createServerClient } from '@supabase/ssr'
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
-import { Database } from '@/types/database'
+import type { Database } from '@/types/database'
 
-export async function getSupabaseServerClient() {
+export async function getSupabaseServerClient(): Promise<SupabaseClient<Database>> {
   const cookieStore = await cookies()
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
@@ -12,23 +12,8 @@ export async function getSupabaseServerClient() {
     throw new Error('Missing Supabase environment variables')
   }
 
-  return createServerClient<Database>(
-    supabaseUrl,
-    supabaseAnonKey,
-    {
-      cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value
-        },
-        set(name: string, value: string, options: any) {
-          cookieStore.set({ name, value, ...options })
-        },
-        remove(name: string, options: any) {
-          cookieStore.set({ name, value: '', ...options })
-        },
-      },
-    }
-  )
+  // Use createClient for consistent typing across the app
+  return createClient<Database>(supabaseUrl, supabaseAnonKey)
 }
 
 // Helper to get current user

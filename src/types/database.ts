@@ -12,31 +12,43 @@ export interface Database {
       profiles: {
         Row: {
           id: string
+          email: string | null
           nickname: string
           age: number | null
           gender: 'male' | 'female' | 'other' | 'prefer_not_to_say' | null
           city: string | null
           avatar_url: string | null
+          provider: 'google' | 'email' | 'guest' | null
+          is_guest: boolean
+          onboarding_completed: boolean
           created_at: string
           updated_at: string
         }
         Insert: {
           id: string
-          nickname: string
-          age?: number | null
-          gender?: 'male' | 'female' | 'other' | 'prefer_not_to_say' | null
-          city?: string | null
-          avatar_url?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
+          email?: string | null
           nickname?: string
           age?: number | null
           gender?: 'male' | 'female' | 'other' | 'prefer_not_to_say' | null
           city?: string | null
           avatar_url?: string | null
+          provider?: 'google' | 'email' | 'guest' | null
+          is_guest?: boolean
+          onboarding_completed?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          email?: string | null
+          nickname?: string
+          age?: number | null
+          gender?: 'male' | 'female' | 'other' | 'prefer_not_to_say' | null
+          city?: string | null
+          avatar_url?: string | null
+          provider?: 'google' | 'email' | 'guest' | null
+          is_guest?: boolean
+          onboarding_completed?: boolean
           created_at?: string
           updated_at?: string
         }
