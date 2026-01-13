@@ -44,7 +44,7 @@ export default function ProfilePage() {
                     city,
                     avatar_url: avatar,
                     updated_at: new Date().toISOString(),
-                })
+                } as any)
 
             if (updateError) throw updateError
 
@@ -190,8 +190,8 @@ export default function ProfilePage() {
                                             setShowAvatarPicker(false)
                                         }}
                                         className={`w-8 h-8 flex items-center justify-center text-xl rounded-lg transition-all ${avatar === av
-                                                ? 'bg-orange-500 ring-2 ring-orange-400'
-                                                : 'bg-slate-700 hover:bg-slate-600'
+                                            ? 'bg-orange-500 ring-2 ring-orange-400'
+                                            : 'bg-slate-700 hover:bg-slate-600'
                                             }`}
                                     >
                                         {av}
