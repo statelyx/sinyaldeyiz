@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase/client'
+import { getSupabaseBrowserClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 
 export function RegisterForm() {
@@ -30,6 +30,8 @@ export function RegisterForm() {
     }
 
     setLoading(true)
+
+    const supabase = getSupabaseBrowserClient()
 
     try {
       const { error } = await supabase.auth.signUp({

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createBrowserClient } from '@/lib/supabase/client';
+import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 
 interface Driver {
     id: string;
@@ -26,7 +26,7 @@ export default function DriversPage() {
 
     const loadDrivers = async () => {
         try {
-            const supabase = createBrowserClient();
+            const supabase = getSupabaseBrowserClient();
             const { data, error } = await supabase
                 .from('profiles')
                 .select('id, nickname, avatar_url, vehicle_type, vehicle_brand, vehicle_model, is_online, last_seen')
@@ -107,8 +107,8 @@ export default function DriversPage() {
                                 key={f.value}
                                 onClick={() => setFilter(f.value as any)}
                                 className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-all ${filter === f.value
-                                        ? 'bg-yellow-400 text-black font-bold'
-                                        : 'bg-white/10 text-white/70 hover:bg-white/20'
+                                    ? 'bg-yellow-400 text-black font-bold'
+                                    : 'bg-white/10 text-white/70 hover:bg-white/20'
                                     }`}
                             >
                                 <span>{f.icon}</span>
@@ -120,8 +120,8 @@ export default function DriversPage() {
                     <button
                         onClick={() => setOnlineOnly(!onlineOnly)}
                         className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-all ${onlineOnly
-                                ? 'bg-green-500 text-white font-bold'
-                                : 'bg-white/10 text-white/70 hover:bg-white/20'
+                            ? 'bg-green-500 text-white font-bold'
+                            : 'bg-white/10 text-white/70 hover:bg-white/20'
                             }`}
                     >
                         <span className={`w-2 h-2 rounded-full ${onlineOnly ? 'bg-white' : 'bg-green-400'}`} />

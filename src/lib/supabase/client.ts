@@ -38,6 +38,7 @@ export function createSupabase(): SupabaseClient<Database> {
 }
 
 // Mock data for development (used when MOCK_MODE = true)
+
 export const MOCK_DATA = {
   isMockMode: MOCK_MODE,
   user: {
