@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createBrowserClient } from '@/lib/supabase/client';
 
 interface Notification {
     id: string;
@@ -136,8 +135,8 @@ export default function NotificationsPage() {
                             <div
                                 key={notification.id}
                                 className={`p-4 rounded-xl border transition-all ${notification.read
-                                        ? 'bg-white/5 border-white/10'
-                                        : 'bg-yellow-400/10 border-yellow-400/30'
+                                    ? 'bg-white/5 border-white/10'
+                                    : 'bg-yellow-400/10 border-yellow-400/30'
                                     }`}
                             >
                                 <div className="flex items-start gap-3">

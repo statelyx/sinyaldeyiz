@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createBrowserClient } from '@/lib/supabase/client';
+import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 
 interface Avatar {
     id: number;
@@ -26,7 +26,7 @@ export default function AvatarPicker({ selectedAvatar, onSelect, className = '' 
 
     const loadAvatars = async () => {
         try {
-            const supabase = createBrowserClient();
+            const supabase = getSupabaseBrowserClient();
             const { data, error } = await supabase
                 .from('avatars')
                 .select('*')
