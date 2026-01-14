@@ -45,12 +45,12 @@ export default function GaragePage() {
     }
 
     return (
-        <div className="min-h-screen bg-slate-900 p-4 lg:p-8">
+        <div className="min-h-screen bg-black p-4 lg:p-8">
             {/* Header */}
             <div className="flex items-center justify-between mb-8">
                 <div>
                     <h1 className="text-3xl font-bold text-white">Garajım 🚗</h1>
-                    <p className="text-slate-400 mt-1">Araçlarını yönet ve sergile</p>
+                    <p className="text-white/60 mt-1">Araçlarını yönet ve sergile</p>
                 </div>
                 <button
                     onClick={() => setShowAddModal(true)}
@@ -69,10 +69,10 @@ export default function GaragePage() {
 
             {/* Empty State */}
             {!loading && vehicles.length === 0 && (
-                <div className="text-center py-20 bg-slate-800/50 rounded-2xl border border-slate-700">
+                <div className="text-center py-20 bg-white/5 rounded-2xl border border-white/10">
                     <div className="text-6xl mb-4">🚘</div>
                     <h3 className="text-xl font-bold text-white mb-2">Henüz araç eklenmedi</h3>
-                    <p className="text-slate-400 mb-6">İlk aracını ekleyerek garajına başla!</p>
+                    <p className="text-white/60 mb-6">İlk aracını ekleyerek garajına başla!</p>
                     <button
                         onClick={() => setShowAddModal(true)}
                         className="px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl transition-all"
@@ -88,10 +88,10 @@ export default function GaragePage() {
                     {vehicles.map((vehicle) => (
                         <div
                             key={vehicle.id}
-                            className="bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden hover:border-orange-500/50 transition-all"
+                            className="bg-white/5 rounded-2xl border border-white/10 overflow-hidden hover:border-orange-500/50 transition-all"
                         >
                             {/* Vehicle Image */}
-                            <div className="h-48 bg-gradient-to-br from-slate-700 to-slate-800 flex items-center justify-center">
+                            <div className="h-48 bg-gradient-to-br from-white/5 to-white/10 flex items-center justify-center">
                                 {vehicle.photo_urls.length > 0 ? (
                                     <img
                                         src={vehicle.photo_urls[0]}
@@ -115,15 +115,15 @@ export default function GaragePage() {
                                         </span>
                                     )}
                                 </div>
-                                <p className="text-slate-400 text-sm">
+                                <p className="text-white/60 text-sm">
                                     {vehicle.year ? `${vehicle.year} Model` : 'Yıl belirtilmedi'}
                                 </p>
 
                                 <div className="flex gap-2 mt-4">
-                                    <button className="flex-1 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-sm transition-colors">
+                                    <button className="flex-1 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg text-sm transition-colors">
                                         Düzenle
                                     </button>
-                                    <button className="flex-1 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-sm transition-colors">
+                                    <button className="flex-1 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg text-sm transition-colors">
                                         Fotoğraf Ekle
                                     </button>
                                 </div>
@@ -135,21 +135,21 @@ export default function GaragePage() {
 
             {/* Stats Section */}
             <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-slate-800 rounded-xl p-4 border border-slate-700 text-center">
+                <div className="bg-white/5 rounded-xl p-4 border border-white/10 text-center">
                     <p className="text-3xl font-bold text-white">{vehicles.length}</p>
-                    <p className="text-slate-400 text-sm">Toplam Araç</p>
+                    <p className="text-white/60 text-sm">Toplam Araç</p>
                 </div>
-                <div className="bg-slate-800 rounded-xl p-4 border border-slate-700 text-center">
+                <div className="bg-white/5 rounded-xl p-4 border border-white/10 text-center">
                     <p className="text-3xl font-bold text-orange-400">{vehicles.filter(v => v.is_primary).length}</p>
-                    <p className="text-slate-400 text-sm">Ana Araç</p>
+                    <p className="text-white/60 text-sm">Ana Araç</p>
                 </div>
-                <div className="bg-slate-800 rounded-xl p-4 border border-slate-700 text-center">
+                <div className="bg-white/5 rounded-xl p-4 border border-white/10 text-center">
                     <p className="text-3xl font-bold text-green-400">{vehicles.reduce((acc, v) => acc + v.photo_urls.length, 0)}</p>
-                    <p className="text-slate-400 text-sm">Fotoğraf</p>
+                    <p className="text-white/60 text-sm">Fotoğraf</p>
                 </div>
-                <div className="bg-slate-800 rounded-xl p-4 border border-slate-700 text-center">
+                <div className="bg-white/5 rounded-xl p-4 border border-white/10 text-center">
                     <p className="text-3xl font-bold text-blue-400">0</p>
-                    <p className="text-slate-400 text-sm">Beğeni</p>
+                    <p className="text-white/60 text-sm">Beğeni</p>
                 </div>
             </div>
         </div>
