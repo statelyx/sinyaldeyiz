@@ -2,7 +2,7 @@
 
 Türkiye'nin ilk konum bazlı **araba ve motorsiklet sosyal ağı**.
 
-![Sinyaldeyiz Banner](https://via.placeholder.com/1200x400/0F0F0F/FF5500?text=🏎️+Sinyaldeyiz+-+Arabacılar+%26+Motorcular+İçin)
+<img width="2527" height="835" alt="image" src="https://github.com/user-attachments/assets/34f5239d-e5d2-46d4-a540-b810401870ae" />
 
 ## 🚀 Proje Hakkında
 
