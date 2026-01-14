@@ -9,6 +9,7 @@ import { HotspotDetector } from '@/components/dashboard/hotspot-detector'
 import { GuestWelcomeModal } from '@/components/auth/guest-modal'
 import type { VisibleUser } from '@/lib/services/location-service'
 import { getVisibleUsers } from '@/lib/services/location-service'
+import { createSupabase } from '@/lib/supabase/client'
 
 // Dynamic import for map (requires browser APIs)
 const MapView = dynamic(() => import('@/components/dashboard/map-view'), {
@@ -70,15 +71,41 @@ export default function DashboardPage() {
         }
     }, [])
 
-    // Initial load and polling every 15 seconds
+    // Initial load and real-time subscription for instant updates
     useEffect(() => {
         fetchVisibleUsers()
 
-        const interval = setInterval(() => {
-            fetchVisibleUsers()
-        }, 15000)
+        // Set up real-time subscription for instant updates
+        const supabase = createSupabase()
+        const channel = supabase
+            .channel('dashboard-location-changes')
+            .on(
+                'postgres_changes',
+                {
+                    event: '*', // Listen to all changes (INSERT, UPDATE, DELETE)
+                    schema: 'public',
+                    table: 'location_status'
+                },
+                (payload) => {
+                    console.log('🔄 Dashboard: Location change detected:', payload)
+                    // Fetch all visible users when any change occurs
+                    fetchVisibleUsers()
+                }
+            )
+            .subscribe((status) => {
+                if (status === 'SUBSCRIBED') {
+                    console.log('✅ Dashboard: Realtime subscription active')
+                }
+                if (status === 'CHANNEL_ERROR') {
+                    console.error('❌ Dashboard: Realtime subscription failed')
+                }
+            })
 
-        return () => clearInterval(interval)
+        // Cleanup subscription on unmount
+        return () => {
+            console.log('🔌 Dashboard: Unsubscribing from realtime')
+            supabase.removeChannel(channel)
+        }
     }, [fetchVisibleUsers])
 
     // Handle signal status change

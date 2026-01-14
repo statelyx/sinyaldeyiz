@@ -14,6 +14,14 @@ interface SignalButtonProps {
     isMobile?: boolean
 }
 
+type DurationOption = 10 | 30 | 60
+
+const DURATION_OPTIONS: { value: DurationOption; label: string; description: string }[] = [
+    { value: 10, label: '10 dakika', description: 'Kısa süreli' },
+    { value: 30, label: '30 dakika', description: 'Orta süreli' },
+    { value: 60, label: '1 saat', description: 'Uzun süreli' },
+]
+
 export function SignalButton({ onSignalChange, isMobile = false }: SignalButtonProps) {
     const [isActive, setIsActive] = useState(false)
     const [loading, setLoading] = useState(false)
@@ -21,6 +29,7 @@ export function SignalButton({ onSignalChange, isMobile = false }: SignalButtonP
     const [expiresAt, setExpiresAt] = useState<Date | null>(null)
     const [timeRemaining, setTimeRemaining] = useState<string>('')
     const [showConfirm, setShowConfirm] = useState(false)
+    const [selectedDuration, setSelectedDuration] = useState<DurationOption>(60)
 
     // Check initial status
     useEffect(() => {
@@ -95,12 +104,12 @@ export function SignalButton({ onSignalChange, isMobile = false }: SignalButtonP
             // Request geolocation
             const location = await requestGeolocation()
 
-            // Start signal
-            const result = await startSignal(location)
+            // Start signal with selected duration
+            const result = await startSignal(location, selectedDuration)
 
             if (result.success) {
                 setIsActive(true)
-                const expires = new Date(Date.now() + 60 * 60 * 1000)
+                const expires = new Date(Date.now() + selectedDuration * 60 * 1000)
                 setExpiresAt(expires)
                 onSignalChange(true, { lat: location.lat, lon: location.lon })
             } else {
@@ -146,9 +155,35 @@ export function SignalButton({ onSignalChange, isMobile = false }: SignalButtonP
                             <div className="text-center mb-6">
                                 <div className="text-5xl mb-4">📍</div>
                                 <h3 className="text-xl font-bold text-white mb-2">Sinyal Ver</h3>
-                                <p className="text-slate-300 text-sm">
-                                    Konumunuz 60 dakika boyunca diğer sürücülere gösterilecektir. İstediğiniz zaman kapatabilirsiniz.
+                                <p className="text-slate-300 text-sm mb-4">
+                                    Konumunuz diğer sürücülere gösterilecektir. İstediğiniz zaman kapatabilirsiniz.
                                 </p>
+                            </div>
+
+                            {/* Duration Options */}
+                            <div className="mb-4 space-y-2">
+                                <p className="text-slate-400 text-xs font-medium uppercase tracking-wide">Süre Seçin</p>
+                                {DURATION_OPTIONS.map((option) => (
+                                    <button
+                                        key={option.value}
+                                        onClick={() => setSelectedDuration(option.value)}
+                                        className={`w-full p-3 rounded-lg text-left transition-all ${
+                                            selectedDuration === option.value
+                                                ? 'bg-gradient-to-r from-red-500 to-orange-500 text-white font-medium'
+                                                : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                                        }`}
+                                    >
+                                        <div className="flex justify-between items-center">
+                                            <span>{option.label}</span>
+                                            {selectedDuration === option.value && (
+                                                <span className="text-xl">✓</span>
+                                            )}
+                                        </div>
+                                        <div className={`text-xs ${selectedDuration === option.value ? 'text-white/80' : 'text-slate-400'}`}>
+                                            {option.description}
+                                        </div>
+                                    </button>
+                                ))}
                             </div>
 
                             {error && (
@@ -262,11 +297,34 @@ export function SignalButton({ onSignalChange, isMobile = false }: SignalButtonP
                             <div className="text-6xl mb-4">📍</div>
                             <h3 className="text-2xl font-bold text-white mb-2">Sinyal Vermek Üzeresiniz</h3>
                             <p className="text-slate-300">
-                                Konumunuz <span className="text-blue-400 font-medium">60 dakika</span> boyunca haritada diğer sürücülere gösterilecektir.
+                                Konumunuz haritada diğer sürücülere gösterilecektir.
                             </p>
                             <p className="text-slate-400 text-sm mt-2">
                                 İstediğiniz zaman sinyali kapatabilirsiniz.
                             </p>
+                        </div>
+
+                        {/* Duration Options */}
+                        <div className="mb-6 space-y-2">
+                            <p className="text-slate-400 text-xs font-medium uppercase tracking-wide">Süre Seçin</p>
+                            <div className="grid grid-cols-3 gap-2">
+                                {DURATION_OPTIONS.map((option) => (
+                                    <button
+                                        key={option.value}
+                                        onClick={() => setSelectedDuration(option.value)}
+                                        className={`p-3 rounded-lg text-center transition-all ${
+                                            selectedDuration === option.value
+                                                ? 'bg-gradient-to-r from-red-500 to-orange-500 text-white font-medium'
+                                                : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                                        }`}
+                                    >
+                                        <div className="text-lg font-bold">{option.label}</div>
+                                        <div className={`text-xs ${selectedDuration === option.value ? 'text-white/80' : 'text-slate-400'}`}>
+                                            {option.description}
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
                         </div>
 
                         {error && (

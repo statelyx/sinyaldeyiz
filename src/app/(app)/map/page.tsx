@@ -6,6 +6,7 @@ import { SignalButton } from '@/components/dashboard/signal-button'
 import { WeatherWidgets } from '@/components/dashboard/weather-widgets'
 import { HotspotDetector } from '@/components/dashboard/hotspot-detector'
 import { getVisibleUsers, type VisibleUser } from '@/lib/services/location-service'
+import { createSupabase } from '@/lib/supabase/client'
 
 const MapView = dynamic(() => import('@/components/dashboard/map-view'), {
     ssr: false,
@@ -28,11 +29,43 @@ export default function MapPage() {
         const fetchUsers = async () => {
             const users = await getVisibleUsers()
             setVisibleUsers(users)
+            console.log('📍 Visible users fetched:', users.length)
         }
 
+        // Initial fetch
         fetchUsers()
-        const interval = setInterval(fetchUsers, 15000)
-        return () => clearInterval(interval)
+
+        // Set up real-time subscription for instant updates
+        const supabase = createSupabase()
+        const channel = supabase
+            .channel('location-status-changes')
+            .on(
+                'postgres_changes',
+                {
+                    event: '*', // Listen to all changes (INSERT, UPDATE, DELETE)
+                    schema: 'public',
+                    table: 'location_status'
+                },
+                (payload) => {
+                    console.log('🔄 Location change detected:', payload)
+                    // Fetch all visible users when any change occurs
+                    fetchUsers()
+                }
+            )
+            .subscribe((status) => {
+                if (status === 'SUBSCRIBED') {
+                    console.log('✅ Realtime subscription active')
+                }
+                if (status === 'SUBSCRIPTION_ERROR') {
+                    console.error('❌ Realtime subscription failed')
+                }
+            })
+
+        // Cleanup subscription on unmount
+        return () => {
+            console.log('🔌 Unsubscribing from realtime')
+            supabase.removeChannel(channel)
+        }
     }, [])
 
     const handleSignalChange = (active: boolean, location?: { lat: number; lon: number }) => {

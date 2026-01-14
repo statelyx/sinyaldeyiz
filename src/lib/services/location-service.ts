@@ -22,14 +22,24 @@ let mockSignalExpiry: Date | null = null
 
 /**
  * Start signal - makes user visible on the map
+ * @param location - User's location data
+ * @param durationMinutes - Duration in minutes (10, 30, or 60)
  */
-export async function startSignal(location: LocationData): Promise<{ success: boolean; error?: string }> {
+export async function startSignal(
+    location: LocationData,
+    durationMinutes: number = 60
+): Promise<{ success: boolean; error?: string }> {
     try {
+        // Validate duration
+        if (![10, 30, 60].includes(durationMinutes)) {
+            return { success: false, error: 'Geçersiz süre. Lütfen 10, 30 veya 60 dakika seçin.' }
+        }
+
         // In mock mode, just set local state
         if (MOCK_DATA.isMockMode) {
             mockSignalActive = true
-            mockSignalExpiry = new Date(Date.now() + 60 * 60 * 1000)
-            console.log('🚨 [Mock] Signal started at:', location)
+            mockSignalExpiry = new Date(Date.now() + durationMinutes * 60 * 1000)
+            console.log('🚨 [Mock] Signal started at:', location, `for ${durationMinutes} minutes`)
             return { success: true }
         }
 
@@ -41,13 +51,13 @@ export async function startSignal(location: LocationData): Promise<{ success: bo
         }
 
         const now = new Date()
-        const expiresAt = new Date(now.getTime() + 60 * 60 * 1000)
+        const expiresAt = new Date(now.getTime() + durationMinutes * 60 * 1000)
         const geohash = generateSimpleGeohash(location.lat, location.lon)
 
         const insertData = {
             user_id: user.id,
             is_visible: true,
-            visibility_duration: 60,
+            visibility_duration: durationMinutes,
             expires_at: expiresAt.toISOString(),
             lat: location.lat,
             lon: location.lon,
