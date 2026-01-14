@@ -182,6 +182,61 @@ function getRidingAdvice(current: CurrentWeather): { title: string; advice: stri
     return advices
 }
 
+// Car-specific driving advice
+function getCarDrivingAdvice(current: CurrentWeather): { title: string; advice: string; icon: string; color: string }[] {
+    const advices = []
+
+    // Cabrio (convertible) advice
+    if (current.cabrioIndex >= 80) {
+        advices.push({ title: 'Üstü Açık Sürüş', advice: 'Mükemmel! Tavanı aç ve tadını çıkar 🎉', icon: '🚗', color: 'text-green-400' })
+    } else if (current.cabrioIndex >= 60) {
+        advices.push({ title: 'Üstü Açık Sürüş', advice: 'İyi koşullar, güneş gözlüğü önerilir', icon: '😎', color: 'text-yellow-400' })
+    } else if (current.cabrioIndex >= 40) {
+        advices.push({ title: 'Üstü Açık Sürüş', advice: 'Dikkatli ol, hava değişken', icon: '⛅', color: 'text-orange-400' })
+    } else {
+        advices.push({ title: 'Üstü Açık Sürüş', advice: 'Tavanı kapat, hava uygun değil', icon: '☁️', color: 'text-red-400' })
+    }
+
+    // Tire/Road advice
+    if (current.asphaltCondition === 'Tehlikeli') {
+        advices.push({ title: 'Lastik & Yol', advice: 'Kış lastiği kontrol et! Buzlanma riski yüksek', icon: '❄️', color: 'text-red-400' })
+    } else if (current.asphaltCondition === 'Kaygan') {
+        advices.push({ title: 'Lastik & Yol', advice: 'Ani fren yapma, takip mesafesini artır', icon: '🛞', color: 'text-orange-400' })
+    } else if (current.asphaltCondition === 'İdeal') {
+        advices.push({ title: 'Lastik & Yol', advice: 'Yol koşulları mükemmel!', icon: '✅', color: 'text-green-400' })
+    } else {
+        advices.push({ title: 'Lastik & Yol', advice: 'Normal sürüş koşulları', icon: '👍', color: 'text-blue-400' })
+    }
+
+    // Visibility advice
+    if (current.visibility < 5) {
+        advices.push({ title: 'Görüş Mesafesi', advice: 'Sis farlarını aç, hızını düşür', icon: '🌫️', color: 'text-red-400' })
+    } else if (current.visibility < 10) {
+        advices.push({ title: 'Görüş Mesafesi', advice: 'Görüş mesafesi az, dikkatli ol', icon: '👁️', color: 'text-orange-400' })
+    }
+
+    // AC/Heating advice
+    if (current.temperature > 30) {
+        advices.push({ title: 'Klima', advice: 'Klimayı açmadan önce camları açıp havayı değiştir', icon: '❄️', color: 'text-cyan-400' })
+    } else if (current.temperature < 5) {
+        advices.push({ title: 'Isıtma', advice: 'Aracı ısıtmak için birkaç dakika bekle', icon: '🔥', color: 'text-orange-400' })
+    }
+
+    // Wind for high-profile vehicles
+    if (current.windSpeed > 50) {
+        advices.push({ title: 'Rüzgar Uyarısı', advice: 'Köprü ve viyadüklerde dikkat! Direksiyon kontrolü', icon: '💨', color: 'text-red-400' })
+    } else if (current.windSpeed > 35) {
+        advices.push({ title: 'Rüzgar', advice: 'Yan rüzgara dikkat, özellikle sollama yaparken', icon: '🌬️', color: 'text-orange-400' })
+    }
+
+    // Rain advice
+    if (current.isRaining) {
+        advices.push({ title: 'Yağmur', advice: 'Silecekleri kontrol et, far kullan', icon: '🌧️', color: 'text-blue-400' })
+    }
+
+    return advices
+}
+
 export default function WeatherPage() {
     const [current, setCurrent] = useState<CurrentWeather | null>(null)
     const [daily, setDaily] = useState<DailyForecast[]>([])
@@ -190,6 +245,7 @@ export default function WeatherPage() {
     const [error, setError] = useState<string | null>(null)
     const [location, setLocation] = useState<{ lat: number; lon: number; name: string } | null>(null)
     const [activeTab, setActiveTab] = useState<'daily' | 'hourly'>('daily')
+    const [vehicleTab, setVehicleTab] = useState<'car' | 'moto'>('car')
 
     useEffect(() => {
         // Get user location
@@ -389,22 +445,71 @@ export default function WeatherPage() {
                     </div>
                 </div>
 
-                {/* Motorcyclist Tips */}
+                {/* Vehicle-Specific Tips with Tabs */}
                 <div className="bg-slate-800 rounded-2xl p-6 border border-slate-700">
-                    <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                        <span>🏍️</span> Motorsiklet Sürücüsü Tavsiyeleri
-                    </h2>
-                    <div className="grid gap-3">
-                        {ridingAdvices.map((advice, index) => (
-                            <div key={index} className="flex items-start gap-3 bg-slate-700/50 rounded-xl p-3">
-                                <span className="text-2xl">{advice.icon}</span>
-                                <div>
-                                    <div className={`font-medium ${advice.color}`}>{advice.title}</div>
-                                    <div className="text-slate-400 text-sm">{advice.advice}</div>
-                                </div>
-                            </div>
-                        ))}
+                    {/* Vehicle Tab Switcher */}
+                    <div className="flex rounded-xl bg-slate-700/50 p-1 mb-6">
+                        <button
+                            onClick={() => setVehicleTab('car')}
+                            className={`flex-1 py-3 rounded-lg font-bold transition-all flex items-center justify-center gap-2 ${vehicleTab === 'car'
+                                    ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/30'
+                                    : 'text-slate-400 hover:text-white'
+                                }`}
+                        >
+                            <span className="text-xl">🚗</span>
+                            Araba için
+                        </button>
+                        <button
+                            onClick={() => setVehicleTab('moto')}
+                            className={`flex-1 py-3 rounded-lg font-bold transition-all flex items-center justify-center gap-2 ${vehicleTab === 'moto'
+                                    ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/30'
+                                    : 'text-slate-400 hover:text-white'
+                                }`}
+                        >
+                            <span className="text-xl">🏍️</span>
+                            Motor için
+                        </button>
                     </div>
+
+                    {/* Car Tips */}
+                    {vehicleTab === 'car' && (
+                        <>
+                            <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                                <span>🚗</span> Araç Sürücüsü Tavsiyeleri
+                            </h2>
+                            <div className="grid gap-3">
+                                {getCarDrivingAdvice(current).map((advice, index) => (
+                                    <div key={index} className="flex items-start gap-3 bg-slate-700/50 rounded-xl p-3">
+                                        <span className="text-2xl">{advice.icon}</span>
+                                        <div>
+                                            <div className={`font-medium ${advice.color}`}>{advice.title}</div>
+                                            <div className="text-slate-400 text-sm">{advice.advice}</div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </>
+                    )}
+
+                    {/* Motorcycle Tips */}
+                    {vehicleTab === 'moto' && (
+                        <>
+                            <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                                <span>🏍️</span> Motorsiklet Sürücüsü Tavsiyeleri
+                            </h2>
+                            <div className="grid gap-3">
+                                {ridingAdvices.map((advice, index) => (
+                                    <div key={index} className="flex items-start gap-3 bg-slate-700/50 rounded-xl p-3">
+                                        <span className="text-2xl">{advice.icon}</span>
+                                        <div>
+                                            <div className={`font-medium ${advice.color}`}>{advice.title}</div>
+                                            <div className="text-slate-400 text-sm">{advice.advice}</div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </>
+                    )}
                 </div>
 
                 {/* Forecast Tabs */}

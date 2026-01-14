@@ -30,10 +30,15 @@ export function AuthModal({ isOpen, onClose, mode, onModeChange }: AuthModalProp
         try {
             const supabase = createSupabase()
 
+            // Use environment variable for redirect URL - no runtime calculation
+            const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ||
+                (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000')
+            const redirectUrl = `${siteUrl}/auth/callback`
+
             const { data, error } = await supabase.auth.signInWithOAuth({
                 provider: 'google',
                 options: {
-                    redirectTo: `${window.location.origin}/auth/callback`,
+                    redirectTo: redirectUrl,
                     queryParams: {
                         access_type: 'offline',
                         prompt: 'consent',
@@ -44,7 +49,7 @@ export function AuthModal({ isOpen, onClose, mode, onModeChange }: AuthModalProp
             if (error) throw error
             // User will be redirected to Google
         } catch (err: any) {
-            console.error('Google auth error:', err)
+            console.error('Google auth error:', err.message)
             if (err.message?.includes('provider is not enabled')) {
                 setError('Google girişi henüz aktif değil. Supabase panelinden Google provider\'ı etkinleştirin.')
             } else {
@@ -70,6 +75,10 @@ export function AuthModal({ isOpen, onClose, mode, onModeChange }: AuthModalProp
         try {
             const supabase = createSupabase()
 
+            // Use environment variable for redirect URL
+            const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ||
+                (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000')
+
             if (mode === 'register') {
                 if (password !== confirmPassword) {
                     setError('Şifreler eşleşmiyor')
@@ -87,7 +96,7 @@ export function AuthModal({ isOpen, onClose, mode, onModeChange }: AuthModalProp
                     email,
                     password,
                     options: {
-                        emailRedirectTo: `${window.location.origin}/auth/callback`,
+                        emailRedirectTo: `${siteUrl}/auth/callback`,
                     }
                 })
 
@@ -128,7 +137,7 @@ export function AuthModal({ isOpen, onClose, mode, onModeChange }: AuthModalProp
                 }
             }
         } catch (err: any) {
-            console.error('Auth error:', err)
+            console.error('Auth error:', err.message)
             if (err.message?.includes('Invalid login')) {
                 setError('E-posta veya şifre hatalı')
             } else if (err.message?.includes('already registered')) {

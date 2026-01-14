@@ -76,6 +76,52 @@ test.describe('Auth Modal', () => {
     });
 });
 
+test.describe('Guest Mode', () => {
+    test('should have Misafir Girişi button on landing page', async ({ page }) => {
+        await page.goto('/');
+        await expect(page.getByRole('button', { name: /Misafir/i })).toBeVisible();
+    });
+
+    test('should redirect to dashboard on guest login', async ({ page }) => {
+        await page.goto('/');
+        await page.getByRole('button', { name: /Misafir/i }).click();
+
+        // Should navigate to dashboard
+        await page.waitForURL(/\/dashboard/);
+        await expect(page).toHaveURL(/\/dashboard/);
+    });
+
+    test('should show guest welcome modal on first visit', async ({ page }) => {
+        // Clear any existing guest flags
+        await page.goto('/');
+        await page.evaluate(() => {
+            localStorage.removeItem('sinyaldeyiz_guest');
+            localStorage.removeItem('sinyaldeyiz_guest_first_visit');
+        });
+
+        // Click guest login
+        await page.getByRole('button', { name: /Misafir/i }).click();
+
+        // Should show welcome modal
+        await page.waitForURL(/\/dashboard/);
+        await expect(page.getByText(/Hoş Geldin/i)).toBeVisible({ timeout: 5000 });
+    });
+});
+
+test.describe('Google Icon Verification', () => {
+    test('Google login button should have colored Google icon, not GitHub', async ({ page }) => {
+        await page.goto('/');
+
+        // Find the Google login button
+        const googleButton = page.getByRole('button', { name: /Google ile Giriş/i });
+        await expect(googleButton).toBeVisible();
+
+        // Check for colored Google SVG (has multiple fill colors)
+        const bluePath = googleButton.locator('svg path[fill="#4285F4"]');
+        await expect(bluePath).toBeVisible();
+    });
+});
+
 test.describe('Responsive Design', () => {
     test('should be mobile responsive', async ({ page }) => {
         await page.setViewportSize({ width: 375, height: 667 });

@@ -94,6 +94,44 @@ Tarayıcıda aç: [http://localhost:3000](http://localhost:3000)
 3. Redirect URI: `https://YOUR_SUPABASE_URL/auth/v1/callback`
 4. Client ID ve Secret'ı Supabase → Authentication → Providers → Google'a gir
 
+## 🔐 Auth Güvenliği
+
+### Authorization Code + PKCE Flow
+
+Bu proje, endüstri standardı **Authorization Code + PKCE** akışını kullanır (Implicit flow değil):
+
+1. Kullanıcı "Google ile Giriş" tıklar
+2. Google'a yönlendirilir
+3. `/auth/callback?code=xxx` olarak geri döner (token değil!)
+4. Server-side kod exchange ile güvenli token alımı
+5. **URL'de asla token görünmez** ✅
+
+### Production Ortam Değişkenleri
+
+**Vercel veya production ortamında şunları ayarla:**
+
+```env
+NEXT_PUBLIC_SITE_URL=https://sinyaldeyiz.vercel.app
+```
+
+Bu değişken auth redirect'in doğru çalışması için **ZORUNLUDUR**.
+
+### Supabase Auth Ayarları
+
+**Authentication → URL Configuration:**
+- Site URL: `https://sinyaldeyiz.vercel.app`
+- Redirect URLs:
+  - `http://localhost:3000/auth/callback`
+  - `https://sinyaldeyiz.vercel.app/auth/callback`
+
+### Güvenlik Kontrol Listesi
+
+- ✅ Token URL'de görünmez
+- ✅ Code exchange server-side yapılır
+- ✅ Cookie'ler HttpOnly
+- ✅ Implicit flow kullanılmaz
+- ✅ PKCE challenge kullanılır
+
 ## 📁 Proje Yapısı
 
 ```

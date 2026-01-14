@@ -19,19 +19,19 @@ export default function ThreeBackground() {
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         camera.position.z = 30;
 
-        // Renderer with optimized settings
+        // Renderer with optimized settings - PERFORMANCE OPTIMIZED
         const renderer = new THREE.WebGLRenderer({
             alpha: true,
-            antialias: true,
+            antialias: false, // Disabled for better performance
             powerPreference: 'high-performance'
         });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.0)); // Reduced for performance
         renderer.setClearColor(0x000000, 0);
         containerRef.current.appendChild(renderer.domElement);
 
-        // Torus Knot with blue/purple glow
-        const torusKnotGeometry = new THREE.TorusKnotGeometry(8, 0.8, 100, 16);
+        // Torus Knot with blue/purple glow - OPTIMIZED
+        const torusKnotGeometry = new THREE.TorusKnotGeometry(8, 0.8, 48, 8); // Reduced segments
         const torusKnotMaterial = new THREE.MeshBasicMaterial({
             color: 0x6366f1,
             wireframe: true,
@@ -42,8 +42,8 @@ export default function ThreeBackground() {
         torusKnot.position.set(-15, 0, -10);
         scene.add(torusKnot);
 
-        // Second Torus with purple glow
-        const torusKnot2Geometry = new THREE.TorusKnotGeometry(5, 0.5, 80, 12);
+        // Second Torus with purple glow - OPTIMIZED
+        const torusKnot2Geometry = new THREE.TorusKnotGeometry(5, 0.5, 36, 6); // Reduced segments
         const torusKnot2Material = new THREE.MeshBasicMaterial({
             color: 0xa855f7,
             wireframe: true,
@@ -148,9 +148,9 @@ export default function ThreeBackground() {
         const trail = new THREE.Line(trailGeometry, trailMaterial);
         scene.add(trail);
 
-        // Floating particles
+        // Floating particles - OPTIMIZED
         const particlesGeometry = new THREE.BufferGeometry();
-        const particlesCount = 200;
+        const particlesCount = 80; // Reduced for performance
         const posArray = new Float32Array(particlesCount * 3);
 
         for (let i = 0; i < particlesCount * 3; i++) {
@@ -234,16 +234,27 @@ export default function ThreeBackground() {
             window.removeEventListener('mousemove', handleMouseMove);
             window.removeEventListener('resize', handleResize);
             if (animationId) cancelAnimationFrame(animationId);
-            if (containerRef.current && renderer.domElement) {
+
+            // Dispose geometries
+            torusKnotGeometry.dispose();
+            torusKnot2Geometry.dispose();
+            particlesGeometry.dispose();
+
+            // Dispose materials
+            torusKnotMaterial.dispose();
+            torusKnot2Material.dispose();
+            particlesMaterial.dispose();
+
+            // Dispose renderer
+            renderer.dispose();
+
+            // Clear scene
+            scene.clear();
+
+            // Remove DOM element
+            if (containerRef.current && renderer.domElement && containerRef.current.contains(renderer.domElement)) {
                 containerRef.current.removeChild(renderer.domElement);
             }
-            renderer.dispose();
-            torusKnotGeometry.dispose();
-            torusKnotMaterial.dispose();
-            torusKnot2Geometry.dispose();
-            torusKnot2Material.dispose();
-            particlesGeometry.dispose();
-            particlesMaterial.dispose();
         };
     }, []);
 

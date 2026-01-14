@@ -6,6 +6,7 @@ import { useAuth } from '@/components/providers/supabase-provider'
 import { SignalButton } from '@/components/dashboard/signal-button'
 import { WeatherWidgets } from '@/components/dashboard/weather-widgets'
 import { HotspotDetector } from '@/components/dashboard/hotspot-detector'
+import { GuestWelcomeModal } from '@/components/auth/guest-modal'
 import type { VisibleUser } from '@/lib/services/location-service'
 import { getVisibleUsers } from '@/lib/services/location-service'
 
@@ -38,9 +39,24 @@ export default function DashboardPage() {
     const [isSignalActive, setIsSignalActive] = useState(false)
     const [loading, setLoading] = useState(true)
     const [greeting] = useState(() => greetings[Math.floor(Math.random() * greetings.length)])
+    const [showGuestModal, setShowGuestModal] = useState(false)
+
+    // Check for first-time guest visit
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const getCookie = (name: string) => {
+                const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'))
+                return match ? match[2] : null
+            }
+            const isFirstVisit = getCookie('sinyaldeyiz_guest_first_visit') === 'true'
+            if (isFirstVisit) {
+                setShowGuestModal(true)
+            }
+        }
+    }, [])
 
     // Get nickname or fallback
-    const displayName = profile?.nickname || user?.email?.split('@')[0] || 'Sürücü'
+    const displayName = profile?.nickname || user?.email?.split('@')[0] || (isGuest ? 'Misafir' : 'Sürücü')
 
     // Fetch visible users
     const fetchVisibleUsers = useCallback(async () => {
@@ -126,8 +142,8 @@ export default function DashboardPage() {
                     <div className="hidden lg:flex items-center gap-3">
                         {/* Signal Status Chip */}
                         <div className={`px-5 py-2.5 rounded-xl border flex items-center gap-2.5 text-sm font-bold transition-all ${isSignalActive
-                                ? 'bg-green-500/10 border-green-500/30 text-green-400'
-                                : 'bg-white/5 border-white/10 text-white/50'
+                            ? 'bg-green-500/10 border-green-500/30 text-green-400'
+                            : 'bg-white/5 border-white/10 text-white/50'
                             }`}>
                             <span className={`w-2.5 h-2.5 rounded-full ${isSignalActive ? 'bg-green-400 animate-pulse' : 'bg-white/30'}`} />
                             {isSignalActive ? 'SIGNAL ON' : 'SIGNAL OFF'}
@@ -157,6 +173,27 @@ export default function DashboardPage() {
                     visibleUsers={visibleUsers}
                     isSignalActive={isSignalActive}
                 />
+
+                {/* Guest Mode Blur Overlay */}
+                {isGuest && (
+                    <div className="absolute inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-10">
+                        <div className="text-center p-8 max-w-md">
+                            <div className="text-7xl mb-6">🔒</div>
+                            <h3 className="text-3xl font-bold text-white mb-3">
+                                Misafir Modu
+                            </h3>
+                            <p className="text-white/70 mb-8 text-lg">
+                                Haritayı görmek ve sinyal vermek için giriş yapmalısın
+                            </p>
+                            <button
+                                onClick={() => window.location.href = '/'}
+                                className="px-8 py-4 bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-300 hover:to-orange-400 text-black font-bold text-lg rounded-xl transition-all shadow-lg shadow-yellow-500/30"
+                            >
+                                🏁 Giriş Yap
+                            </button>
+                        </div>
+                    </div>
+                )}
 
                 {/* Desktop Signal Button */}
                 <div className="absolute bottom-6 left-6 hidden lg:block">
@@ -203,8 +240,8 @@ export default function DashboardPage() {
                     <div className="flex items-center gap-4">
                         {/* Signal Indicator */}
                         <div className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold uppercase ${isSignalActive
-                                ? 'bg-green-500/10 text-green-400'
-                                : 'bg-white/5 text-white/40'
+                            ? 'bg-green-500/10 text-green-400'
+                            : 'bg-white/5 text-white/40'
                             }`}>
                             <span className={`w-2 h-2 rounded-full ${isSignalActive ? 'bg-green-400 animate-pulse' : 'bg-white/30'}`} />
                             {isSignalActive ? 'ON' : 'OFF'}
@@ -226,6 +263,12 @@ export default function DashboardPage() {
                     </div>
                 </div>
             </div>
+
+            {/* Guest Welcome Modal */}
+            <GuestWelcomeModal
+                isOpen={showGuestModal}
+                onClose={() => setShowGuestModal(false)}
+            />
         </div>
     )
 }

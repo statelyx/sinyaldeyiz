@@ -11,6 +11,16 @@ interface MapViewProps {
     isSignalActive: boolean
 }
 
+// Escape HTML to prevent XSS
+function escapeHtml(unsafe: string): string {
+    return unsafe
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;")
+}
+
 export default function MapView({ userLocation, visibleUsers, isSignalActive }: MapViewProps) {
     const mapContainer = useRef<HTMLDivElement>(null)
     const map = useRef<maplibregl.Map | null>(null)
@@ -113,6 +123,10 @@ export default function MapView({ userLocation, visibleUsers, isSignalActive }: 
         } else {
             // Vehicle emoji based on brand
             const vehicleEmoji = getVehicleEmoji(user.vehicle_brand)
+            // Escape nickname to prevent XSS
+            const safeNickname = escapeHtml(user.nickname || 'Sürücü')
+            const safeBrand = user.vehicle_brand ? escapeHtml(user.vehicle_brand) : ''
+            const safeModel = user.vehicle_model ? escapeHtml(user.vehicle_model) : ''
 
             el.innerHTML = `
         <div class="relative cursor-pointer group">
@@ -120,10 +134,15 @@ export default function MapView({ userLocation, visibleUsers, isSignalActive }: 
             ${vehicleEmoji}
           </div>
           <div class="absolute -bottom-1 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white text-[10px] px-2 py-0.5 rounded-full whitespace-nowrap font-medium max-w-[80px] truncate">
-            ${user.nickname}
+            ${safeNickname}
           </div>
         </div>
       `
+
+            // Store safe data for popup
+            ;(el as any).dataset.safeBrand = safeBrand
+            ;(el as any).dataset.safeModel = safeModel
+            ;(el as any).dataset.safeNickname = safeNickname
         }
 
         return el
@@ -143,6 +162,12 @@ export default function MapView({ userLocation, visibleUsers, isSignalActive }: 
 
             const el = createMarkerElement(user, false)
 
+            // Get escaped data from element
+            const safeBrand = (el as any).dataset.safeBrand || ''
+            const safeModel = (el as any).dataset.safeModel || ''
+            const safeNickname = (el as any).dataset.safeNickname || 'Sürücü'
+            const vehicleEmoji = getVehicleEmoji(user.vehicle_brand)
+
             const popup = new maplibregl.Popup({
                 offset: 25,
                 closeButton: false,
@@ -151,15 +176,15 @@ export default function MapView({ userLocation, visibleUsers, isSignalActive }: 
         <div class="p-3 min-w-[150px]">
           <div class="flex items-center gap-2 mb-2">
             <div class="w-8 h-8 rounded-full bg-gradient-to-r from-orange-500 to-red-500 flex items-center justify-center text-sm">
-              ${getVehicleEmoji(user.vehicle_brand)}
+              ${vehicleEmoji}
             </div>
             <div>
-              <p class="font-bold text-slate-800">${user.nickname}</p>
+              <p class="font-bold text-slate-800">${safeNickname}</p>
             </div>
           </div>
-          ${user.vehicle_brand && user.vehicle_model ? `
+          ${safeBrand && safeModel ? `
             <div class="text-sm text-slate-600">
-              <span class="font-medium">${user.vehicle_brand}</span> ${user.vehicle_model}
+              <span class="font-medium">${safeBrand}</span> ${safeModel}
             </div>
           ` : ''}
           <div class="text-xs text-slate-400 mt-2">
@@ -233,35 +258,35 @@ export default function MapView({ userLocation, visibleUsers, isSignalActive }: 
           box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
           border: 1px solid #e2e8f0;
         }
-        
+
         .maplibregl-popup-anchor-bottom .maplibregl-popup-tip {
           border-top-color: white;
         }
-        
+
         .marker-container {
           cursor: pointer;
         }
-        
+
         .maplibregl-ctrl-group {
           background: rgba(30, 41, 59, 0.9) !important;
           border: 1px solid rgba(71, 85, 105, 0.5) !important;
           border-radius: 8px !important;
           backdrop-filter: blur(8px);
         }
-        
+
         .maplibregl-ctrl-group button {
           background-color: transparent !important;
           border: none !important;
         }
-        
+
         .maplibregl-ctrl-group button:hover {
           background-color: rgba(51, 65, 85, 0.8) !important;
         }
-        
+
         .maplibregl-ctrl-group button span {
           filter: invert(0.9);
         }
-        
+
         .maplibregl-ctrl-attrib {
           background: rgba(30, 41, 59, 0.8) !important;
           color: #94a3b8 !important;
@@ -269,7 +294,7 @@ export default function MapView({ userLocation, visibleUsers, isSignalActive }: 
           padding: 2px 6px;
           border-radius: 4px;
         }
-        
+
         .maplibregl-ctrl-attrib a {
           color: #60a5fa !important;
         }

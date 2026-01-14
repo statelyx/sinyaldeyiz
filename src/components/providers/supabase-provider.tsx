@@ -44,10 +44,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
   const [authState, setAuthState] = useState<AuthState>('loading')
+  const [isLocalGuest, setIsLocalGuest] = useState(false)
 
   // Compute derived state
   const isOnboarded = profile?.onboarding_completed ?? false
-  const isGuest = profile?.is_guest ?? false
+  const isGuest = isLocalGuest || (profile?.is_guest ?? false)
 
   // Fetch profile from database
   const fetchProfile = useCallback(async (userId: string): Promise<Profile | null> => {
@@ -133,13 +134,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const initAuth = async () => {
       try {
+        // Check for cookie-based guest mode first
+        if (typeof window !== 'undefined') {
+          const getCookie = (name: string) => {
+            const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'))
+            return match ? match[2] : null
+          }
+          const isGuestUser = getCookie('sinyaldeyiz_guest') === 'true'
+          if (isGuestUser) {
+            setIsLocalGuest(true)
+            setAuthState('guest')
+            setLoading(false)
+            return
+          }
+        }
+
         const supabase = createSupabase()
 
         // Get current session
         const { data: { session }, error } = await supabase.auth.getSession()
 
         if (error) {
-          console.error('Session error:', error)
+          console.error('Session error:', error.message)
           setLoading(false)
           setAuthState('unauthenticated')
           return
@@ -168,8 +184,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Listen for auth changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
           async (event, session) => {
-            console.log('Auth state change:', event)
-
             if (event === 'SIGNED_IN' && session?.user) {
               setUser(session.user)
               setSession(session)
@@ -207,6 +221,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Sign out
   const signOut = async () => {
     try {
+      // Clear cookie-based guest flags
+      if (typeof window !== 'undefined') {
+        const deleteCookie = (name: string) => {
+          document.cookie = `${name}=; path=/; max-age=0`
+        }
+        deleteCookie('sinyaldeyiz_guest')
+        deleteCookie('sinyaldeyiz_guest_first_visit')
+      }
+      setIsLocalGuest(false)
+
       const supabase = createSupabase()
       await supabase.auth.signOut()
     } catch (err) {

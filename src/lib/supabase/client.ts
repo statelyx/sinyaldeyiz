@@ -1,13 +1,14 @@
-import { createClient, SupabaseClient } from '@supabase/supabase-js'
+import { createBrowserClient } from '@supabase/ssr'
 import type { Database } from '@/types/database'
 
 // Set to false to use real Supabase, true for mock data
-const MOCK_MODE = true
+const MOCK_MODE = false
 
-let client: SupabaseClient<Database> | null = null
+let client: ReturnType<typeof createBrowserClient<Database>> | null = null
 
-export function getSupabaseBrowserClient(): SupabaseClient<Database> {
+export function getSupabaseBrowserClient() {
   if (typeof window === 'undefined') {
+    // Server-side - should not be called, but return a client anyway
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
@@ -15,7 +16,14 @@ export function getSupabaseBrowserClient(): SupabaseClient<Database> {
       throw new Error('Missing Supabase environment variables')
     }
 
-    return createClient<Database>(supabaseUrl, supabaseAnonKey)
+    return createBrowserClient<Database>(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        flowType: 'pkce',
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: true,
+      }
+    })
   }
 
   if (!client) {
@@ -26,13 +34,42 @@ export function getSupabaseBrowserClient(): SupabaseClient<Database> {
       throw new Error('Missing Supabase environment variables')
     }
 
-    client = createClient<Database>(supabaseUrl, supabaseAnonKey)
+    // Use createBrowserClient from @supabase/ssr for cookie-based storage
+    client = createBrowserClient<Database>(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        flowType: 'pkce', // CRITICAL: Use PKCE flow
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: true,
+        storage: {
+          // Custom storage that uses cookies instead of localStorage
+          getItem: (key: string) => {
+            if (typeof window === 'undefined') return null
+            // Read from cookie
+            const match = document.cookie.match(new RegExp('(^| )' + key + '=([^;]+)'))
+            return match ? decodeURIComponent(match[2]) : null
+          },
+          setItem: (key: string, value: string) => {
+            if (typeof window === 'undefined') return
+            // Set cookie
+            const expires = new Date()
+            expires.setTime(expires.getTime() + 7 * 24 * 60 * 60 * 1000) // 7 days
+            document.cookie = `${key}=${encodeURIComponent(value)}; path=/; expires=${expires.toUTCString()}; SameSite=lax`
+          },
+          removeItem: (key: string) => {
+            if (typeof window === 'undefined') return
+            // Remove cookie
+            document.cookie = `${key}=; path=/; max-age=0`
+          },
+        },
+      }
+    })
   }
 
   return client
 }
 
-export function createSupabase(): SupabaseClient<Database> {
+export function createSupabase() {
   return getSupabaseBrowserClient()
 }
 
