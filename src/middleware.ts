@@ -17,22 +17,36 @@ export async function middleware(request: NextRequest) {
           return request.cookies.get(name)?.value
         },
         set(name: string, value: string, options: any) {
-          request.cookies.set({ name, value, ...options })
+          const cookieOptions = {
+            ...options,
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax' as const,
+            path: '/'
+          }
+          request.cookies.set({ name, value, ...cookieOptions })
           response = NextResponse.next({
             request: {
               headers: request.headers,
             },
           })
-          response.cookies.set({ name, value, ...options })
+          response.cookies.set({ name, value, ...cookieOptions })
         },
         remove(name: string, options: any) {
-          request.cookies.set({ name, value: '', ...options })
+          const cookieOptions = {
+            ...options,
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax' as const,
+            path: '/'
+          }
+          request.cookies.set({ name, value: '', ...cookieOptions })
           response = NextResponse.next({
             request: {
               headers: request.headers,
             },
           })
-          response.cookies.set({ name, value: '', ...options })
+          response.cookies.set({ name, value: '', ...cookieOptions })
         },
       },
     }
@@ -44,7 +58,7 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // Korumalı rotalar
-  const protectedPaths = ['/dashboard', '/garage', '/forum']
+  const protectedPaths = ['/dashboard', '/garage', '/forum', '/map', '/profile', '/stats', '/drivers', '/messages', '/weather']
   const isProtectedPath = protectedPaths.some(path => pathname.startsWith(path))
 
   // Auth sayfaları (giriş yapmış kullanıcıya gösterme)
@@ -52,7 +66,7 @@ export async function middleware(request: NextRequest) {
   const isAuthPath = authPaths.some(path => pathname.startsWith(path))
 
   // Ana sayfa ve auth callback hariç her yer için kontrol
-  const publicPaths = ['/', '/auth/callback', '/offline']
+  const publicPaths = ['/', '/auth/callback', '/offline', '/onboarding']
   const isPublicPath = publicPaths.some(path => pathname === path || pathname.startsWith(path))
 
   // Eğer kullanıcı giriş yapmamışsa ve korumalı bir rotaya erişmeye çalışıyorsa
@@ -67,25 +81,9 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(redirectUrl)
   }
 
-  // Onboarding kontrolü (sadece session varsa)
-  if (session && !pathname.startsWith('/onboarding')) {
-    try {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('onboarding_completed, nickname')
-        .eq('id', session.user.id)
-        .single()
-
-      // Eğer profile yoksa veya onboarding tamamlanmadıysa
-      if (!profile || (!profile.onboarding_completed && !profile.nickname)) {
-        const onboardingUrl = new URL('/onboarding', request.url)
-        return NextResponse.redirect(onboardingUrl)
-      }
-    } catch (error) {
-      // Profile erişemeyebiliriz (hata durumunda sessizce devam et)
-      console.error('Middleware profile check error:', error)
-    }
-  }
+  // Onboarding kontrolü KALDIRILDI - Client-side'a taşındı (supabase-provider.tsx)
+  // Bu, middleware'deki performans sorununu ve redirect loop'u çözer
+  // Onboarding kontrolü artık client-side auth provider'da yapılıyor
 
   return response
 }
