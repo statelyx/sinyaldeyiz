@@ -119,40 +119,73 @@ async function main() {
         stats.carModels = totalModels;
         console.log(`   ${stats.carModels} unique car models found\n`);
 
+        // Get existing car brands to avoid duplicates
+        const { data: existingCarBrands } = await supabase
+            .from('vehicle_brands')
+            .select('id, name')
+            .eq('type', 'car');
+
+        const existingCarBrandNames = new Set(existingCarBrands?.map(b => b.name) || []);
+        const newCarBrands = uniqueBrands.filter(b => !existingCarBrandNames.has(b));
+
+        console.log(`   ${existingCarBrandNames.size} existing car brands found`);
+        console.log(`   ${newCarBrands.length} new car brands to insert\n`);
+
+        // Get max brand ID to avoid conflicts
+        const { data: maxBrandResult } = await supabase
+            .from('vehicle_brands')
+            .select('id')
+            .order('id', { ascending: false })
+            .limit(1);
+        const maxBrandId = maxBrandResult?.[0]?.id || 0;
+        let nextBrandId = maxBrandId + 1;
+
         // Insert into vehicle_brands table
         console.log('📤 Inserting car brands into vehicle_brands...');
 
-        // Clear existing car brands first (only car type)
-        await supabase.from('vehicle_brands').delete().eq('type', 'car');
+        let brandRecords: any[] = [];
+        if (newCarBrands.length > 0) {
+            brandRecords = newCarBrands.map((brand) => ({
+                id: nextBrandId++,
+                name: brand,
+                type: 'car'
+            }));
 
-        const brandRecords = uniqueBrands.map((brand, index) => ({
-            id: index + 1,
-            name: brand,
-            type: 'car'
-        }));
+            const { error: brandError } = await supabase.from('vehicle_brands').insert(brandRecords);
 
-        const { error: brandError } = await supabase.from('vehicle_brands').insert(brandRecords);
-
-        if (brandError) {
-            console.error('   Error inserting car brands:', brandError.message);
+            if (brandError) {
+                console.error('   Error inserting car brands:', brandError.message);
+            } else {
+                console.log(`   ✅ Inserted ${newCarBrands.length} new car brands\n`);
+            }
         } else {
-            console.log(`   ✅ Inserted ${uniqueBrands.length} car brands\n`);
+            console.log(`   ℹ️ All car brands already exist\n`);
+            // Use existing brands for models
+            brandRecords = existingCarBrands || [];
         }
+
+        // Get existing models to avoid ID conflicts
+        const { data: existingModels } = await supabase
+            .from('vehicle_models')
+            .select('id')
+            .order('id', { ascending: false })
+            .limit(1);
+
+        const maxModelId = existingModels && existingModels.length > 0 ? existingModels[0].id : 0;
+        let nextModelId = maxModelId + 1;
 
         // Insert into vehicle_models table
         console.log('📤 Inserting car models into vehicle_models...');
 
-        // Clear existing car models - delete all since vehicle_models doesn't have type column
-        await supabase.from('vehicle_models').delete().neq('id', 0);
-
-        let modelId = 1;
         const modelRecords: any[] = [];
 
         for (const [brand, models] of brandModels.entries()) {
             const brandId = brandRecords.find(b => b.name === brand)?.id;
+            if (!brandId) continue;
+
             for (const model of models) {
                 modelRecords.push({
-                    id: modelId++,
+                    id: nextModelId++,
                     brand_id: brandId,
                     name: model
                 });
@@ -182,6 +215,9 @@ async function main() {
     // =========================================
     console.log('📁 Loading moto_brands.json...');
 
+    // Brand ID mapping from moto_brands.json
+    let motoBrandsIdMap = new Map<number, string>(); // JSON brand_id -> brand name
+
     if (!fs.existsSync(MOTO_BRANDS_FILE)) {
         console.error('❌ moto_brands.json not found at:', MOTO_BRANDS_FILE);
     } else {
@@ -191,29 +227,47 @@ async function main() {
         console.log(`   Found ${motoBrands.length} motorcycle brands\n`);
         stats.motoBrands = motoBrands.length;
 
-        // Insert into vehicle_brands table
-        console.log('📤 Inserting motorcycle brands into vehicle_brands...');
+        // Create ID mapping: JSON brand_id -> brand name
+        motoBrands.forEach(b => {
+            motoBrandsIdMap.set(b.id, b.name);
+        });
 
-        // Get max current brand ID
-        const { data: maxBrandResult } = await supabase
+        // Get existing motorcycle brands to avoid duplicates
+        const { data: existingMotoBrands } = await supabase
             .from('vehicle_brands')
-            .select('id')
-            .order('id', { ascending: false })
-            .limit(1);
-        const maxBrandId = maxBrandResult?.[0]?.id || 0;
+            .select('name')
+            .eq('type', 'motorcycle');
 
-        const brandRecords = motoBrands.map((b, index) => ({
-            id: maxBrandId + index + 1,
-            name: b.name,
-            type: 'motorcycle'
-        }));
+        const existingMotoBrandNames = new Set(existingMotoBrands?.map(b => b.name) || []);
+        const newMotoBrands = motoBrands.filter(b => !existingMotoBrandNames.has(b.name));
 
-        const { error: brandError } = await supabase.from('vehicle_brands').insert(brandRecords);
+        console.log(`   ${existingMotoBrandNames.size} existing brands found`);
+        console.log(`   ${newMotoBrands.length} new brands to insert\n`);
 
-        if (brandError) {
-            console.error('   Error inserting moto brands:', brandError.message);
+        if (newMotoBrands.length > 0) {
+            // Get max current brand ID
+            const { data: maxBrandResult } = await supabase
+                .from('vehicle_brands')
+                .select('id')
+                .order('id', { ascending: false })
+                .limit(1);
+            const maxBrandId = maxBrandResult?.[0]?.id || 0;
+
+            const brandRecords = newMotoBrands.map((b, index) => ({
+                id: maxBrandId + index + 1,
+                name: b.name,
+                type: 'motorcycle'
+            }));
+
+            const { error: brandError } = await supabase.from('vehicle_brands').insert(brandRecords);
+
+            if (brandError) {
+                console.error('   Error inserting moto brands:', brandError.message);
+            } else {
+                console.log(`   ✅ Inserted ${newMotoBrands.length} new motorcycle brands\n`);
+            }
         } else {
-            console.log(`   ✅ Inserted ${motoBrands.length} motorcycle brands\n`);
+            console.log(`   ℹ️ All motorcycle brands already exist\n`);
         }
     }
 
@@ -231,8 +285,14 @@ async function main() {
         console.log(`   Found ${motoModels.length} motorcycle models\n`);
         stats.motoModels = motoModels.length;
 
-        // Insert into vehicle_models table
-        console.log('📤 Inserting motorcycle models into vehicle_models...');
+        // Get all motorcycle brands from database for ID mapping
+        const { data: allMotoBrands } = await supabase
+            .from('vehicle_brands')
+            .select('id, name')
+            .eq('type', 'motorcycle');
+
+        // Create mapping: brand name -> database ID
+        const brandNameToId = new Map(allMotoBrands?.map(b => [b.name, b.id]) || []);
 
         // Get max current model ID
         const { data: maxModelResult } = await supabase
@@ -245,13 +305,36 @@ async function main() {
         // Insert in batches of 500
         const batchSize = 500;
         let inserted = 0;
+        let skipped = 0;
 
         for (let i = 0; i < motoModels.length; i += batchSize) {
-            const batch = motoModels.slice(i, i + batchSize).map((m, idx) => ({
-                id: maxModelId + i + idx + 1,
-                brand_id: m.brand_id,
-                name: m.name
-            }));
+            const batch = motoModels.slice(i, i + batchSize).map((m, idx) => {
+                // Get brand name from moto_brands.json using brand_id
+                if (!m.brand_id) {
+                    skipped++;
+                    return null;
+                }
+                const brandName = motoBrandsIdMap.get(m.brand_id);
+                if (!brandName) {
+                    skipped++;
+                    return null;
+                }
+
+                // Get database ID from brand name
+                const brandId = brandNameToId.get(brandName);
+                if (!brandId) {
+                    skipped++;
+                    return null;
+                }
+
+                return {
+                    id: maxModelId + i + idx + 1,
+                    brand_id: brandId,
+                    name: m.name
+                };
+            }).filter(m => m !== null); // Filter out null entries
+
+            if (batch.length === 0) continue;
 
             const { error } = await supabase.from('vehicle_models').insert(batch);
 
@@ -263,7 +346,7 @@ async function main() {
             }
         }
 
-        console.log(`\n   ✅ Inserted ${inserted}/${motoModels.length} motorcycle models\n`);
+        console.log(`\n   ✅ Inserted ${inserted}/${motoModels.length} motorcycle models (skipped: ${skipped})\n`);
     }
 
     // =========================================
