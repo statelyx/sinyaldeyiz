@@ -56,7 +56,7 @@ export default function MapPage() {
                 if (status === 'SUBSCRIBED') {
                     console.log('✅ Realtime subscription active')
                 }
-                if (status === 'SUBSCRIPTION_ERROR') {
+                if (status === 'CHANNEL_ERROR') {
                     console.error('❌ Realtime subscription failed')
                 }
             })
