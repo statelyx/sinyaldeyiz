@@ -151,18 +151,18 @@ export function SignalButton({ onSignalChange, isMobile = false }: SignalButtonP
                 {/* Confirmation Modal */}
                 {showConfirm && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-                        <div className="bg-slate-800 rounded-2xl p-6 max-w-sm w-full border border-slate-700 shadow-xl">
+                        <div className="bg-black/90 backdrop-blur-xl rounded-2xl p-6 max-w-sm w-full border border-white/10 shadow-xl">
                             <div className="text-center mb-6">
                                 <div className="text-5xl mb-4">📍</div>
                                 <h3 className="text-xl font-bold text-white mb-2">Sinyal Ver</h3>
-                                <p className="text-slate-300 text-sm mb-4">
+                                <p className="text-white/70 text-sm mb-4">
                                     Konumunuz diğer sürücülere gösterilecektir. İstediğiniz zaman kapatabilirsiniz.
                                 </p>
                             </div>
 
                             {/* Duration Options */}
                             <div className="mb-4 space-y-2">
-                                <p className="text-slate-400 text-xs font-medium uppercase tracking-wide">Süre Seçin</p>
+                                <p className="text-white/60 text-xs font-medium uppercase tracking-wide">Süre Seçin</p>
                                 {DURATION_OPTIONS.map((option) => (
                                     <button
                                         key={option.value}
@@ -170,7 +170,7 @@ export function SignalButton({ onSignalChange, isMobile = false }: SignalButtonP
                                         className={`w-full p-3 rounded-lg text-left transition-all ${
                                             selectedDuration === option.value
                                                 ? 'bg-gradient-to-r from-red-500 to-orange-500 text-white font-medium'
-                                                : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                                                : 'bg-white/10 text-white/70 hover:bg-white/20'
                                         }`}
                                     >
                                         <div className="flex justify-between items-center">
@@ -179,7 +179,7 @@ export function SignalButton({ onSignalChange, isMobile = false }: SignalButtonP
                                                 <span className="text-xl">✓</span>
                                             )}
                                         </div>
-                                        <div className={`text-xs ${selectedDuration === option.value ? 'text-white/80' : 'text-slate-400'}`}>
+                                        <div className={`text-xs ${selectedDuration === option.value ? 'text-white/80' : 'text-white/60'}`}>
                                             {option.description}
                                         </div>
                                     </button>
@@ -196,7 +196,7 @@ export function SignalButton({ onSignalChange, isMobile = false }: SignalButtonP
                                 <button
                                     onClick={() => setShowConfirm(false)}
                                     disabled={loading}
-                                    className="flex-1 py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-medium transition-colors"
+                                    className="flex-1 py-3 bg-white/10 hover:bg-white/20 text-white rounded-lg font-medium transition-colors"
                                 >
                                     İptal
                                 </button>
@@ -253,7 +253,7 @@ export function SignalButton({ onSignalChange, isMobile = false }: SignalButtonP
             )}
 
             {isActive ? (
-                <div className="bg-slate-800/90 backdrop-blur-sm rounded-2xl p-4 border border-green-500/30 space-y-3">
+                <div className="bg-black/90 backdrop-blur-xl rounded-2xl p-4 border border-green-500/20 space-y-3">
                     <div className="flex items-center gap-3">
                         <div className="relative">
                             <div className="w-12 h-12 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center text-2xl">
@@ -270,7 +270,7 @@ export function SignalButton({ onSignalChange, isMobile = false }: SignalButtonP
                     <button
                         onClick={handleStopSignal}
                         disabled={loading}
-                        className="w-full py-2.5 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
+                        className="w-full py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
                     >
                         {loading ? 'Durduruluyor...' : '⏹️ Sinyali Kapat'}
                     </button>
@@ -292,21 +292,21 @@ export function SignalButton({ onSignalChange, isMobile = false }: SignalButtonP
             {/* Confirmation Modal */}
             {showConfirm && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-                    <div className="bg-slate-800 rounded-2xl p-6 max-w-md w-full border border-slate-700 shadow-xl">
+                    <div className="bg-black/90 backdrop-blur-xl rounded-2xl p-6 max-w-md w-full border border-white/10 shadow-xl">
                         <div className="text-center mb-6">
                             <div className="text-6xl mb-4">📍</div>
                             <h3 className="text-2xl font-bold text-white mb-2">Sinyal Vermek Üzeresiniz</h3>
-                            <p className="text-slate-300">
+                            <p className="text-white/70">
                                 Konumunuz haritada diğer sürücülere gösterilecektir.
                             </p>
-                            <p className="text-slate-400 text-sm mt-2">
+                            <p className="text-white/60 text-sm mt-2">
                                 İstediğiniz zaman sinyali kapatabilirsiniz.
                             </p>
                         </div>
 
                         {/* Duration Options */}
                         <div className="mb-6 space-y-2">
-                            <p className="text-slate-400 text-xs font-medium uppercase tracking-wide">Süre Seçin</p>
+                            <p className="text-white/60 text-xs font-medium uppercase tracking-wide">Süre Seçin</p>
                             <div className="grid grid-cols-3 gap-2">
                                 {DURATION_OPTIONS.map((option) => (
                                     <button
@@ -315,11 +315,11 @@ export function SignalButton({ onSignalChange, isMobile = false }: SignalButtonP
                                         className={`p-3 rounded-lg text-center transition-all ${
                                             selectedDuration === option.value
                                                 ? 'bg-gradient-to-r from-red-500 to-orange-500 text-white font-medium'
-                                                : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                                                : 'bg-white/10 text-white/70 hover:bg-white/20'
                                         }`}
                                     >
                                         <div className="text-lg font-bold">{option.label}</div>
-                                        <div className={`text-xs ${selectedDuration === option.value ? 'text-white/80' : 'text-slate-400'}`}>
+                                        <div className={`text-xs ${selectedDuration === option.value ? 'text-white/80' : 'text-white/60'}`}>
                                             {option.description}
                                         </div>
                                     </button>
@@ -337,7 +337,7 @@ export function SignalButton({ onSignalChange, isMobile = false }: SignalButtonP
                             <button
                                 onClick={() => setShowConfirm(false)}
                                 disabled={loading}
-                                className="flex-1 py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-xl font-medium transition-colors"
+                                className="flex-1 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl font-medium transition-colors"
                             >
                                 İptal
                             </button>
