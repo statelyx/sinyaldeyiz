@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/components/providers/supabase-provider'
 import { createSupabase } from '@/lib/supabase/client'
@@ -22,10 +22,25 @@ export default function ProfilePage() {
     const [nickname, setNickname] = useState(profile?.nickname || '')
     const [city, setCity] = useState(profile?.city || '')
     const [avatar, setAvatar] = useState(profile?.avatar_url || '👤')
+    const [customAvatarUrl, setCustomAvatarUrl] = useState('')
     const [showAvatarPicker, setShowAvatarPicker] = useState(false)
+    const [showCustomAvatar, setShowCustomAvatar] = useState(false)
     const [loading, setLoading] = useState(false)
     const [success, setSuccess] = useState('')
     const [error, setError] = useState('')
+    const [nicknameChangedCount, setNicknameChangedCount] = useState(0)
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+    const [deleteLoading, setDeleteLoading] = useState(false)
+
+    // Load nickname change count
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const count = localStorage.getItem('nickname_change_count') || '0'
+            setNicknameChangedCount(parseInt(count))
+        }
+    }, [])
+
+    const canChangeNickname = nicknameChangedCount === 0
 
     const handleSave = async () => {
         if (!user) return
@@ -36,17 +51,40 @@ export default function ProfilePage() {
         try {
             const supabase = createSupabase()
 
+            // Check if nickname is being changed
+            const isNicknameChange = nickname !== profile?.nickname
+
+            // Validate nickname change
+            if (isNicknameChange && !canChangeNickname) {
+                setError('Takma ad sadece 1 kez değiştirilebilir!')
+                setLoading(false)
+                return
+            }
+
+            const updateData: any = {
+                id: user.id,
+                city,
+                avatar_url: avatar,
+                updated_at: new Date().toISOString(),
+            }
+
+            // Only update nickname if it's changed and allowed
+            if (isNicknameChange) {
+                updateData.nickname = nickname
+            }
+
             const { error: updateError } = await supabase
                 .from('profiles')
-                .upsert({
-                    id: user.id,
-                    nickname,
-                    city,
-                    avatar_url: avatar,
-                    updated_at: new Date().toISOString(),
-                } as any)
+                .upsert(updateData)
 
             if (updateError) throw updateError
+
+            // Update nickname change count if nickname was changed
+            if (isNicknameChange) {
+                const newCount = nicknameChangedCount + 1
+                setNicknameChangedCount(newCount)
+                localStorage.setItem('nickname_change_count', newCount.toString())
+            }
 
             await refreshProfile()
             setSuccess('Profil güncellendi!')
@@ -55,6 +93,33 @@ export default function ProfilePage() {
             setError(err.message || 'Güncelleme başarısız')
         } finally {
             setLoading(false)
+        }
+    }
+
+    const handleDeleteAccount = async () => {
+        if (!user) return
+        setDeleteLoading(true)
+        setError('')
+
+        try {
+            const supabase = createSupabase()
+
+            // Delete user data (cascade will handle related records)
+            const { error: deleteError } = await supabase
+                .from('profiles')
+                .delete()
+                .eq('id', user.id)
+
+            if (deleteError) throw deleteError
+
+            // Sign out
+            await signOut()
+
+            // Redirect to home
+            router.push('/')
+        } catch (err: any) {
+            setError(err.message || 'Hesap silinemedi')
+            setDeleteLoading(false)
         }
     }
 
@@ -88,18 +153,31 @@ export default function ProfilePage() {
                 <div className="bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden">
                     {/* Avatar Section */}
                     <div className="bg-gradient-to-r from-orange-500/20 to-red-500/20 p-8 text-center">
-                        <button
-                            onClick={() => setShowAvatarPicker(true)}
-                            className="relative inline-block"
-                        >
-                            <div className="w-24 h-24 rounded-full bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center text-5xl mx-auto ring-4 ring-orange-500/30">
-                                {avatar}
-                            </div>
-                            <div className="absolute bottom-0 right-0 w-8 h-8 bg-slate-800 rounded-full flex items-center justify-center border-2 border-orange-500">
-                                ✏️
-                            </div>
-                        </button>
-                        <p className="text-slate-400 text-sm mt-3">Avatar değiştirmek için tıkla</p>
+                        <div className="flex justify-center gap-4">
+                            <button
+                                onClick={() => setShowAvatarPicker(true)}
+                                className="relative inline-block"
+                            >
+                                <div className="w-24 h-24 rounded-full bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center text-5xl mx-auto ring-4 ring-orange-500/30">
+                                    {avatar}
+                                </div>
+                                <div className="absolute bottom-0 right-0 w-8 h-8 bg-slate-800 rounded-full flex items-center justify-center border-2 border-orange-500">
+                                    ✏️
+                                </div>
+                            </button>
+                            <button
+                                onClick={() => setShowCustomAvatar(true)}
+                                className="relative inline-block"
+                            >
+                                <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-5xl mx-auto ring-4 ring-blue-500/30">
+                                    📷
+                                </div>
+                                <div className="absolute bottom-0 right-0 w-8 h-8 bg-slate-800 rounded-full flex items-center justify-center border-2 border-blue-500">
+                                    🌐
+                                </div>
+                            </button>
+                        </div>
+                        <p className="text-slate-400 text-sm mt-3">Emoji veya URL ile avatar değiştir</p>
                     </div>
 
                     {/* Form */}
@@ -121,15 +199,23 @@ export default function ProfilePage() {
                         {/* Nickname */}
                         <div>
                             <label className="block text-sm font-medium text-slate-300 mb-2">
-                                Takma Ad
+                                Takma Ad {!canChangeNickname && <span className="text-red-400">(Son değiştirme hakkı kullanıldı)</span>}
                             </label>
                             <input
                                 type="text"
                                 value={nickname}
                                 onChange={(e) => setNickname(e.target.value)}
-                                className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                disabled={!canChangeNickname}
+                                className={`w-full px-4 py-3 rounded-lg text-white focus:outline-none focus:ring-2 ${
+                                    !canChangeNickname
+                                        ? 'bg-slate-700/50 border border-slate-600 cursor-not-allowed text-slate-400'
+                                        : 'bg-slate-700 border border-slate-600 focus:ring-orange-500'
+                                }`}
                                 placeholder="Takma adınız"
                             />
+                            {!canChangeNickname && (
+                                <p className="text-yellow-500 text-xs mt-1">⚠️ Takma ad sadece 1 kez değiştirilebilir</p>
+                            )}
                         </div>
 
                         {/* City */}
@@ -160,23 +246,79 @@ export default function ProfilePage() {
                     </div>
 
                     {/* Danger Zone */}
-                    <div className="border-t border-slate-700 p-6">
+                    <div className="border-t border-slate-700 p-6 space-y-4">
                         <h3 className="text-red-400 font-medium mb-4">Tehlikeli Bölge</h3>
+
                         <button
                             onClick={handleSignOut}
                             className="w-full py-3 bg-red-500/20 hover:bg-red-500/30 text-red-400 font-medium rounded-lg border border-red-500/50 transition-all"
                         >
                             Çıkış Yap
                         </button>
+
+                        <button
+                            onClick={() => setShowDeleteConfirm(true)}
+                            className="w-full py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg transition-all"
+                        >
+                            Hesabı Sil
+                        </button>
+
+                        <p className="text-slate-500 text-xs text-center">
+                            Hesabı silerseniz tüm verileriniz kalıcı olarak silinir ve geri alınamaz.
+                        </p>
                     </div>
                 </div>
+
+                {/* Delete Confirmation Modal */}
+                {showDeleteConfirm && (
+                    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+                        <div className="bg-slate-800 rounded-2xl p-6 w-full max-w-md border border-red-500/50">
+                            <div className="text-center mb-6">
+                                <div className="text-6xl mb-4">⚠️</div>
+                                <h3 className="text-2xl font-bold text-white mb-2">Hesabı Sil</h3>
+                                <p className="text-slate-300">
+                                    Bu işlem geri alınamaz. Tüm verileriniz kalıcı olarak silinecek.
+                                </p>
+                                <p className="text-red-400 font-medium mt-2">
+                                    Emin misiniz?
+                                </p>
+                            </div>
+
+                            {error && (
+                                <div className="mb-4 p-3 bg-red-500/20 border border-red-500 rounded-lg text-red-400 text-sm">
+                                    {error}
+                                </div>
+                            )}
+
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => {
+                                        setShowDeleteConfirm(false)
+                                        setError('')
+                                    }}
+                                    disabled={deleteLoading}
+                                    className="flex-1 py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-medium transition-all"
+                                >
+                                    İptal
+                                </button>
+                                <button
+                                    onClick={handleDeleteAccount}
+                                    disabled={deleteLoading}
+                                    className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg transition-all disabled:opacity-50"
+                                >
+                                    {deleteLoading ? 'Siliniyor...' : 'Evet, Sil'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* Avatar Picker Modal */}
                 {showAvatarPicker && (
                     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
                         <div className="bg-slate-800 rounded-2xl p-6 w-full max-w-md border border-slate-700">
                             <div className="flex items-center justify-between mb-4">
-                                <h3 className="text-xl font-bold text-white">Avatar Seç</h3>
+                                <h3 className="text-xl font-bold text-white">Emoji Avatar Seç</h3>
                                 <button onClick={() => setShowAvatarPicker(false)} className="text-slate-400 hover:text-white">
                                     ✕
                                 </button>
@@ -197,6 +339,56 @@ export default function ProfilePage() {
                                         {av}
                                     </button>
                                 ))}
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Custom Avatar URL Modal */}
+                {showCustomAvatar && (
+                    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+                        <div className="bg-slate-800 rounded-2xl p-6 w-full max-w-md border border-slate-700">
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-xl font-bold text-white">Avatar URL Gir</h3>
+                                <button onClick={() => setShowCustomAvatar(false)} className="text-slate-400 hover:text-white">
+                                    ✕
+                                </button>
+                            </div>
+
+                            <div className="space-y-4">
+                                <input
+                                    type="url"
+                                    value={customAvatarUrl}
+                                    onChange={(e) => setCustomAvatarUrl(e.target.value)}
+                                    placeholder="https://example.com/avatar.jpg"
+                                    className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+
+                                {customAvatarUrl && (
+                                    <div className="flex justify-center">
+                                        <img
+                                            src={customAvatarUrl}
+                                            alt="Preview"
+                                            className="w-24 h-24 rounded-full object-cover ring-4 ring-blue-500/30"
+                                            onError={() => setError('Geçersiz resim URL')}
+                                            onLoad={() => setError('')}
+                                        />
+                                    </div>
+                                )}
+
+                                <button
+                                    onClick={() => {
+                                        if (customAvatarUrl) {
+                                            setAvatar(customAvatarUrl)
+                                            setShowCustomAvatar(false)
+                                            setCustomAvatarUrl('')
+                                        }
+                                    }}
+                                    disabled={!customAvatarUrl}
+                                    className="w-full py-3 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-bold rounded-lg transition-all disabled:opacity-50"
+                                >
+                                    Avatarı Ayarla
+                                </button>
                             </div>
                         </div>
                     </div>

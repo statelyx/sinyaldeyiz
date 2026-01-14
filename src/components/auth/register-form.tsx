@@ -34,12 +34,15 @@ export function RegisterForm() {
     const supabase = getSupabaseBrowserClient()
 
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
       })
 
       if (error) throw error
+
+      // Wait for auth to be established
+      await new Promise(resolve => setTimeout(resolve, 1000))
 
       // Redirect to onboarding after successful registration
       router.push('/onboarding')

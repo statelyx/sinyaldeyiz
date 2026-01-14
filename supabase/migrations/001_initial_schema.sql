@@ -45,7 +45,7 @@ CREATE TABLE vehicles (
 CREATE TABLE location_status (
   user_id UUID PRIMARY KEY REFERENCES profiles(id) ON DELETE CASCADE,
   is_visible BOOLEAN DEFAULT FALSE,
-  visibility_duration INTEGER CHECK (visibility_duration IN (30, 60, 120)),
+  visibility_duration INTEGER CHECK (visibility_duration IN (10, 30, 60)),
   expires_at TIMESTAMPTZ,
   lat DECIMAL(10, 8),
   lon DECIMAL(11, 8),

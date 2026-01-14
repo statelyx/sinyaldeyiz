@@ -20,28 +20,34 @@ export function LoginForm() {
     const supabase = getSupabaseBrowserClient()
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
 
       if (error) throw error
 
+      // Wait a moment for auth to be established
+      await new Promise(resolve => setTimeout(resolve, 500))
+
       // Check if user has completed onboarding
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
-        const { data: profile } = await supabase
+        const { data: profile, error: profileError } = await supabase
           .from('profiles')
           .select('age, vehicles(id)')
           .eq('id', user.id)
           .single()
 
         // Redirect based on onboarding status
-        if (!(profile as any)?.age || !(profile as any)?.vehicles || (profile as any).vehicles.length === 0) {
+        if (profileError || !profile || !(profile as any)?.age || !(profile as any)?.vehicles || (profile as any).vehicles.length === 0) {
           router.push('/onboarding')
         } else {
-          router.push('/app')
+          router.push('/dashboard')
         }
+      } else {
+        // Fallback redirect if user data not available
+        router.push('/dashboard')
       }
     } catch (err: any) {
       setError(err.message || 'Giriş başarısız')
