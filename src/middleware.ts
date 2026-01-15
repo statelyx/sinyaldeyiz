@@ -52,8 +52,13 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // Session kontrolü
-  const { data: { session } } = await supabase.auth.getSession()
+  // Use getUser() instead of getSession() for reliable auth check
+  // getSession() can return stale cached data, getUser() verifies with Supabase
+  const { data: { user }, error } = await supabase.auth.getUser()
+
+  if (error) {
+    console.log('Middleware auth error:', error.message)
+  }
 
   const { pathname } = request.nextUrl
 
@@ -70,13 +75,13 @@ export async function middleware(request: NextRequest) {
   const isPublicPath = publicPaths.some(path => pathname === path || pathname.startsWith(path))
 
   // Eğer kullanıcı giriş yapmamışsa ve korumalı bir rotaya erişmeye çalışıyorsa
-  if (isProtectedPath && !session) {
+  if (isProtectedPath && !user) {
     const redirectUrl = new URL('/', request.url)
     return NextResponse.redirect(redirectUrl)
   }
 
   // Eğer kullanıcı giriş yapmışsa ve auth sayfalarına erişmeye çalışıyorsa
-  if (isAuthPath && session) {
+  if (isAuthPath && user) {
     const redirectUrl = new URL('/dashboard', request.url)
     return NextResponse.redirect(redirectUrl)
   }
