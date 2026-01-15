@@ -73,7 +73,7 @@ export async function startSignal(
 
         if (error) {
             console.error('Error starting signal:', error)
-            return { success: false, error: 'Sinyal başlatılırken hata oluştu' }
+            return { success: false, error: 'Sinyal başlatılırken hata oluştu: ' + error.message }
         }
 
         return { success: true }
