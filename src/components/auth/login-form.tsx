@@ -39,15 +39,15 @@ export function LoginForm() {
           .eq('id', user.id)
           .single()
 
-        // Redirect based on onboarding status
+        // Redirect based on onboarding status - use window.location for full page reload
         if (profileError || !profile || !(profile as any)?.age || !(profile as any)?.vehicles || (profile as any).vehicles.length === 0) {
-          router.push('/onboarding')
+          window.location.href = '/onboarding'
         } else {
-          router.push('/dashboard')
+          window.location.href = '/dashboard'
         }
       } else {
         // Fallback redirect if user data not available
-        router.push('/dashboard')
+        window.location.href = '/dashboard'
       }
     } catch (err: any) {
       setError(err.message || 'Giriş başarısız')

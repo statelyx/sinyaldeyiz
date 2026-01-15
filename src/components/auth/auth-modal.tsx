@@ -105,10 +105,9 @@ export function AuthModal({ isOpen, onClose, mode, onModeChange }: AuthModalProp
                 if (data.user) {
                     setSuccess('Kayıt başarılı! Yönlendiriliyorsunuz...')
 
-                    // Wait briefly then redirect
+                    // Wait briefly then redirect with full page reload
                     setTimeout(() => {
-                        router.push('/onboarding')
-                        onClose()
+                        window.location.href = '/onboarding'
                     }, 1000)
                 }
             } else {
@@ -129,10 +128,11 @@ export function AuthModal({ isOpen, onClose, mode, onModeChange }: AuthModalProp
 
                     onClose()
 
+                    // Use window.location.href for full page reload to ensure session is properly loaded
                     if ((profile as any)?.onboarding_completed || (profile as any)?.nickname) {
-                        router.push('/dashboard')
+                        window.location.href = '/dashboard'
                     } else {
-                        router.push('/onboarding')
+                        window.location.href = '/onboarding'
                     }
                 }
             }
