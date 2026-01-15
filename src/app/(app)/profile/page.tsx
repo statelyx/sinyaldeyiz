@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/components/providers/supabase-provider'
 import { createSupabase } from '@/lib/supabase/client'
@@ -18,6 +18,7 @@ const CITIES = ['İstanbul', 'Ankara', 'İzmir', 'Bursa', 'Antalya', 'Konya', 'A
 export default function ProfilePage() {
     const router = useRouter()
     const { user, profile, refreshProfile, signOut } = useAuth()
+    const fileInputRef = useRef<HTMLInputElement>(null)
 
     const [nickname, setNickname] = useState(profile?.nickname || '')
     const [city, setCity] = useState(profile?.city || '')
@@ -25,6 +26,8 @@ export default function ProfilePage() {
     const [customAvatarUrl, setCustomAvatarUrl] = useState('')
     const [showAvatarPicker, setShowAvatarPicker] = useState(false)
     const [showCustomAvatar, setShowCustomAvatar] = useState(false)
+    const [uploadProgress, setUploadProgress] = useState(0)
+    const [uploading, setUploading] = useState(false)
     const [loading, setLoading] = useState(false)
     const [success, setSuccess] = useState('')
     const [error, setError] = useState('')
@@ -61,7 +64,7 @@ export default function ProfilePage() {
                 return
             }
 
-            const updateData: any = {
+            const updateData = {
                 id: user.id,
                 city,
                 avatar_url: avatar,
@@ -70,12 +73,12 @@ export default function ProfilePage() {
 
             // Only update nickname if it's changed and allowed
             if (isNicknameChange) {
-                updateData.nickname = nickname
+                ;(updateData as any).nickname = nickname
             }
 
             const { error: updateError } = await supabase
                 .from('profiles')
-                .upsert(updateData)
+                .upsert(updateData as any)
 
             if (updateError) throw updateError
 
@@ -93,6 +96,72 @@ export default function ProfilePage() {
             setError(err.message || 'Güncelleme başarısız')
         } finally {
             setLoading(false)
+        }
+    }
+
+    const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0]
+        if (!file) return
+
+        // Validate file size (max 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+            setError('Dosya boyutu maksimum 5MB olmalı')
+            return
+        }
+
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+            setError('Sadece resim dosyaları yüklenebilir')
+            return
+        }
+
+        setUploading(true)
+        setUploadProgress(0)
+        setError('')
+
+        try {
+            const supabase = createSupabase()
+            const fileExt = file.name.split('.').pop()
+            const fileName = `${user!.id}-${Date.now()}.${fileExt}`
+            const filePath = `avatars/${fileName}`
+
+            // Upload file to Supabase Storage
+            const { data: uploadData, error: uploadError } = await supabase.storage
+                .from('avatars')
+                .upload(filePath, file, {
+                    cacheControl: '3600',
+                    upsert: true
+                })
+
+            if (uploadError) {
+                // If bucket doesn't exist, try to create it first
+                if (uploadError.message.includes('The resource was not found')) {
+                    setError('Storage bucket bulunamadı. Lütfen daha sonra tekrar deneyin.')
+                } else {
+                    throw uploadError
+                }
+                return
+            }
+
+            setUploadProgress(50)
+
+            // Get public URL
+            const { data: { publicUrl } } = supabase.storage
+                .from('avatars')
+                .getPublicUrl(filePath)
+
+            setAvatar(publicUrl)
+            setUploadProgress(100)
+            setSuccess('Resim yüklendi! Şimdi "Değişiklikleri Kaydet" butonuna tıklayın.')
+            setTimeout(() => setSuccess(''), 5000)
+        } catch (err: any) {
+            setError(err.message || 'Yükleme başarısız')
+        } finally {
+            setUploading(false)
+            setUploadProgress(0)
+            if (fileInputRef.current) {
+                fileInputRef.current.value = ''
+            }
         }
     }
 
@@ -129,39 +198,40 @@ export default function ProfilePage() {
     }
 
     return (
-        <div className="min-h-screen bg-slate-900 p-4 lg:p-8">
+        <div className="min-h-screen bg-gradient-to-br from-black via-yellow-950/20 to-black p-4 lg:p-8">
             <div className="max-w-2xl mx-auto">
                 {/* Header */}
                 <div className="text-center mb-8">
-                    <h1 className="text-3xl font-bold text-white">Profil Ayarları</h1>
-                    <p className="text-slate-400 mt-1">Kişisel bilgilerini düzenle</p>
+                    <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-500">Profil Ayarları</h1>
+                    <p className="text-white/60 mt-1">Kişisel bilgilerini düzenle</p>
                 </div>
 
                 {/* Messages */}
                 {success && (
-                    <div className="mb-4 p-3 bg-green-500/20 border border-green-500 rounded-lg text-green-400 text-sm">
+                    <div className="mb-4 p-3 bg-green-500/20 border border-green-500/50 rounded-lg text-green-400 text-sm">
                         {success}
                     </div>
                 )}
                 {error && (
-                    <div className="mb-4 p-3 bg-red-500/20 border border-red-500 rounded-lg text-red-400 text-sm">
+                    <div className="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-400 text-sm">
                         {error}
                     </div>
                 )}
 
                 {/* Profile Card */}
-                <div className="bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden">
+                <div className="bg-black/80 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden shadow-2xl shadow-yellow-500/10">
                     {/* Avatar Section */}
-                    <div className="bg-gradient-to-r from-orange-500/20 to-red-500/20 p-8 text-center">
-                        <div className="flex justify-center gap-4">
+                    <div className="bg-gradient-to-r from-yellow-400/20 via-orange-500/20 to-red-500/20 p-8 text-center relative overflow-hidden">
+                        <div className="absolute inset-0 bg-gradient-to-br from-yellow-400/5 to-orange-500/5"></div>
+                        <div className="flex justify-center gap-4 relative z-10">
                             <button
                                 onClick={() => setShowAvatarPicker(true)}
                                 className="relative inline-block"
                             >
-                                <div className="w-24 h-24 rounded-full bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center text-5xl mx-auto ring-4 ring-orange-500/30">
+                                <div className="w-24 h-24 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center text-5xl mx-auto ring-4 ring-yellow-400/30 shadow-lg shadow-yellow-500/20">
                                     {avatar}
                                 </div>
-                                <div className="absolute bottom-0 right-0 w-8 h-8 bg-slate-800 rounded-full flex items-center justify-center border-2 border-orange-500">
+                                <div className="absolute bottom-0 right-0 w-8 h-8 bg-black/90 backdrop-blur-xl rounded-full flex items-center justify-center border-2 border-yellow-400">
                                     ✏️
                                 </div>
                             </button>
@@ -169,36 +239,60 @@ export default function ProfilePage() {
                                 onClick={() => setShowCustomAvatar(true)}
                                 className="relative inline-block"
                             >
-                                <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-5xl mx-auto ring-4 ring-blue-500/30">
-                                    📷
-                                </div>
-                                <div className="absolute bottom-0 right-0 w-8 h-8 bg-slate-800 rounded-full flex items-center justify-center border-2 border-blue-500">
+                                <div className="w-24 h-24 rounded-full bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center text-5xl mx-auto ring-4 ring-orange-500/30 shadow-lg shadow-orange-500/20">
                                     🌐
                                 </div>
+                                <div className="absolute bottom-0 right-0 w-8 h-8 bg-black/90 backdrop-blur-xl rounded-full flex items-center justify-center border-2 border-orange-500">
+                                    🔗
+                                </div>
                             </button>
+                            <button
+                                onClick={() => fileInputRef.current?.click()}
+                                disabled={uploading}
+                                className="relative inline-block"
+                            >
+                                <div className="w-24 h-24 rounded-full bg-gradient-to-br from-red-500 to-yellow-500 flex items-center justify-center text-5xl mx-auto ring-4 ring-red-500/30 shadow-lg shadow-red-500/20">
+                                    {uploading ? '⏳' : '📷'}
+                                </div>
+                                <div className="absolute bottom-0 right-0 w-8 h-8 bg-black/90 backdrop-blur-xl rounded-full flex items-center justify-center border-2 border-red-500">
+                                    📤
+                                </div>
+                                {uploading && (
+                                    <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full">
+                                        <span className="text-xs text-white font-bold">{uploadProgress}%</span>
+                                    </div>
+                                )}
+                            </button>
+                            <input
+                                ref={fileInputRef}
+                                type="file"
+                                accept="image/*"
+                                onChange={handleFileUpload}
+                                className="hidden"
+                            />
                         </div>
-                        <p className="text-slate-400 text-sm mt-3">Emoji veya URL ile avatar değiştir</p>
+                        <p className="text-white/60 text-sm mt-3 relative z-10">Emoji, URL veya dosya yükleme ile avatar değiştir</p>
                     </div>
 
                     {/* Form */}
                     <div className="p-6 space-y-6">
                         {/* Email (readonly) */}
                         <div>
-                            <label className="block text-sm font-medium text-slate-300 mb-2">
+                            <label className="block text-sm font-medium text-white/70 mb-2">
                                 E-posta
                             </label>
                             <input
                                 type="email"
                                 value={user?.email || ''}
                                 disabled
-                                className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-slate-400 cursor-not-allowed"
+                                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white/40 cursor-not-allowed"
                             />
-                            <p className="text-slate-500 text-xs mt-1">E-posta değiştirilemez</p>
+                            <p className="text-white/40 text-xs mt-1">E-posta değiştirilemez</p>
                         </div>
 
                         {/* Nickname */}
                         <div>
-                            <label className="block text-sm font-medium text-slate-300 mb-2">
+                            <label className="block text-sm font-medium text-white/70 mb-2">
                                 Takma Ad {!canChangeNickname && <span className="text-red-400">(Son değiştirme hakkı kullanıldı)</span>}
                             </label>
                             <input
@@ -208,25 +302,25 @@ export default function ProfilePage() {
                                 disabled={!canChangeNickname}
                                 className={`w-full px-4 py-3 rounded-lg text-white focus:outline-none focus:ring-2 ${
                                     !canChangeNickname
-                                        ? 'bg-slate-700/50 border border-slate-600 cursor-not-allowed text-slate-400'
-                                        : 'bg-slate-700 border border-slate-600 focus:ring-orange-500'
+                                        ? 'bg-white/5 border border-white/10 cursor-not-allowed text-white/40'
+                                        : 'bg-white/5 border border-white/10 focus:ring-yellow-400'
                                 }`}
                                 placeholder="Takma adınız"
                             />
                             {!canChangeNickname && (
-                                <p className="text-yellow-500 text-xs mt-1">⚠️ Takma ad sadece 1 kez değiştirilebilir</p>
+                                <p className="text-yellow-400 text-xs mt-1">⚠️ Takma ad sadece 1 kez değiştirilebilir</p>
                             )}
                         </div>
 
                         {/* City */}
                         <div>
-                            <label className="block text-sm font-medium text-slate-300 mb-2">
+                            <label className="block text-sm font-medium text-white/70 mb-2">
                                 Şehir
                             </label>
                             <select
                                 value={city}
                                 onChange={(e) => setCity(e.target.value)}
-                                className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
                             >
                                 <option value="">Şehir Seçin</option>
                                 {CITIES.map((c) => (
@@ -239,14 +333,14 @@ export default function ProfilePage() {
                         <button
                             onClick={handleSave}
                             disabled={loading}
-                            className="w-full py-3 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-bold rounded-lg transition-all disabled:opacity-50"
+                            className="w-full py-3 bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 hover:from-yellow-500 hover:via-orange-600 hover:to-red-600 text-black font-bold rounded-lg transition-all disabled:opacity-50 shadow-lg shadow-yellow-500/20"
                         >
                             {loading ? 'Kaydediliyor...' : 'Değişiklikleri Kaydet'}
                         </button>
                     </div>
 
                     {/* Danger Zone */}
-                    <div className="border-t border-slate-700 p-6 space-y-4">
+                    <div className="border-t border-white/10 p-6 space-y-4">
                         <h3 className="text-red-400 font-medium mb-4">Tehlikeli Bölge</h3>
 
                         <button
@@ -263,7 +357,7 @@ export default function ProfilePage() {
                             Hesabı Sil
                         </button>
 
-                        <p className="text-slate-500 text-xs text-center">
+                        <p className="text-white/40 text-xs text-center">
                             Hesabı silerseniz tüm verileriniz kalıcı olarak silinir ve geri alınamaz.
                         </p>
                     </div>
@@ -271,12 +365,12 @@ export default function ProfilePage() {
 
                 {/* Delete Confirmation Modal */}
                 {showDeleteConfirm && (
-                    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-                        <div className="bg-slate-800 rounded-2xl p-6 w-full max-w-md border border-red-500/50">
+                    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                        <div className="bg-black/90 backdrop-blur-xl rounded-2xl p-6 w-full max-w-md border border-red-500/50 shadow-xl">
                             <div className="text-center mb-6">
                                 <div className="text-6xl mb-4">⚠️</div>
                                 <h3 className="text-2xl font-bold text-white mb-2">Hesabı Sil</h3>
-                                <p className="text-slate-300">
+                                <p className="text-white/70">
                                     Bu işlem geri alınamaz. Tüm verileriniz kalıcı olarak silinecek.
                                 </p>
                                 <p className="text-red-400 font-medium mt-2">
@@ -285,7 +379,7 @@ export default function ProfilePage() {
                             </div>
 
                             {error && (
-                                <div className="mb-4 p-3 bg-red-500/20 border border-red-500 rounded-lg text-red-400 text-sm">
+                                <div className="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-400 text-sm">
                                     {error}
                                 </div>
                             )}
@@ -297,7 +391,7 @@ export default function ProfilePage() {
                                         setError('')
                                     }}
                                     disabled={deleteLoading}
-                                    className="flex-1 py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-medium transition-all"
+                                    className="flex-1 py-3 bg-white/10 hover:bg-white/20 text-white rounded-lg font-medium transition-all"
                                 >
                                     İptal
                                 </button>
@@ -315,11 +409,11 @@ export default function ProfilePage() {
 
                 {/* Avatar Picker Modal */}
                 {showAvatarPicker && (
-                    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-                        <div className="bg-slate-800 rounded-2xl p-6 w-full max-w-md border border-slate-700">
+                    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                        <div className="bg-black/90 backdrop-blur-xl rounded-2xl p-6 w-full max-w-md border border-white/10 shadow-xl">
                             <div className="flex items-center justify-between mb-4">
-                                <h3 className="text-xl font-bold text-white">Emoji Avatar Seç</h3>
-                                <button onClick={() => setShowAvatarPicker(false)} className="text-slate-400 hover:text-white">
+                                <h3 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-500">Emoji Avatar Seç</h3>
+                                <button onClick={() => setShowAvatarPicker(false)} className="text-white/60 hover:text-white">
                                     ✕
                                 </button>
                             </div>
@@ -332,8 +426,8 @@ export default function ProfilePage() {
                                             setShowAvatarPicker(false)
                                         }}
                                         className={`w-8 h-8 flex items-center justify-center text-xl rounded-lg transition-all ${avatar === av
-                                            ? 'bg-orange-500 ring-2 ring-orange-400'
-                                            : 'bg-slate-700 hover:bg-slate-600'
+                                            ? 'bg-gradient-to-r from-yellow-400 to-orange-500 ring-2 ring-yellow-400'
+                                            : 'bg-white/10 hover:bg-white/20'
                                             }`}
                                     >
                                         {av}
@@ -346,11 +440,11 @@ export default function ProfilePage() {
 
                 {/* Custom Avatar URL Modal */}
                 {showCustomAvatar && (
-                    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-                        <div className="bg-slate-800 rounded-2xl p-6 w-full max-w-md border border-slate-700">
+                    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                        <div className="bg-black/90 backdrop-blur-xl rounded-2xl p-6 w-full max-w-md border border-white/10 shadow-xl">
                             <div className="flex items-center justify-between mb-4">
-                                <h3 className="text-xl font-bold text-white">Avatar URL Gir</h3>
-                                <button onClick={() => setShowCustomAvatar(false)} className="text-slate-400 hover:text-white">
+                                <h3 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-red-500">Avatar URL Gir</h3>
+                                <button onClick={() => setShowCustomAvatar(false)} className="text-white/60 hover:text-white">
                                     ✕
                                 </button>
                             </div>
@@ -361,7 +455,7 @@ export default function ProfilePage() {
                                     value={customAvatarUrl}
                                     onChange={(e) => setCustomAvatarUrl(e.target.value)}
                                     placeholder="https://example.com/avatar.jpg"
-                                    className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
                                 />
 
                                 {customAvatarUrl && (
@@ -369,7 +463,7 @@ export default function ProfilePage() {
                                         <img
                                             src={customAvatarUrl}
                                             alt="Preview"
-                                            className="w-24 h-24 rounded-full object-cover ring-4 ring-blue-500/30"
+                                            className="w-24 h-24 rounded-full object-cover ring-4 ring-orange-500/30 shadow-lg shadow-orange-500/20"
                                             onError={() => setError('Geçersiz resim URL')}
                                             onLoad={() => setError('')}
                                         />
@@ -385,7 +479,7 @@ export default function ProfilePage() {
                                         }
                                     }}
                                     disabled={!customAvatarUrl}
-                                    className="w-full py-3 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-bold rounded-lg transition-all disabled:opacity-50"
+                                    className="w-full py-3 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-bold rounded-lg transition-all disabled:opacity-50 shadow-lg shadow-orange-500/20"
                                 >
                                     Avatarı Ayarla
                                 </button>

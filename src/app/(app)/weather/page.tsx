@@ -358,10 +358,10 @@ export default function WeatherPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
+            <div className="min-h-screen bg-gradient-to-br from-black via-yellow-950/20 to-black flex items-center justify-center">
                 <div className="text-center">
                     <div className="text-6xl animate-pulse mb-4">🌤️</div>
-                    <p className="text-slate-400">Hava durumu yükleniyor...</p>
+                    <p className="text-white/60">Hava durumu yükleniyor...</p>
                 </div>
             </div>
         )
@@ -369,13 +369,13 @@ export default function WeatherPage() {
 
     if (error || !current) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
+            <div className="min-h-screen bg-gradient-to-br from-black via-yellow-950/20 to-black flex items-center justify-center">
                 <div className="text-center">
                     <div className="text-6xl mb-4">❌</div>
                     <p className="text-red-400">{error || 'Bir hata oluştu'}</p>
                     <button
                         onClick={() => location && fetchWeatherData(location.lat, location.lon)}
-                        className="mt-4 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg"
+                        className="mt-4 px-4 py-2 bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-black font-bold rounded-lg"
                     >
                         Tekrar Dene
                     </button>
@@ -387,45 +387,45 @@ export default function WeatherPage() {
     const ridingAdvices = getRidingAdvice(current)
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4 pb-24">
+        <div className="min-h-screen bg-gradient-to-br from-black via-yellow-950/20 to-black p-4 pb-24">
             <div className="max-w-4xl mx-auto space-y-6">
                 {/* Header */}
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold text-white">Hava Durumu</h1>
-                        <p className="text-slate-400 text-sm">📍 {location?.name}</p>
+                        <h1 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-500">Hava Durumu</h1>
+                        <p className="text-white/60 text-sm">📍 {location?.name}</p>
                     </div>
-                    <Link href="/dashboard" className="text-slate-400 hover:text-white">
+                    <Link href="/dashboard" className="text-white/60 hover:text-white">
                         ← Geri
                     </Link>
                 </div>
 
                 {/* Current Weather Card */}
-                <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-6 border border-slate-700">
+                <div className="bg-black/80 backdrop-blur-xl rounded-2xl p-6 border border-white/10 shadow-2xl shadow-yellow-500/10">
                     <div className="flex items-center justify-between">
                         <div>
                             <div className="text-7xl mb-2">{current.weatherIcon}</div>
-                            <div className="text-5xl font-bold text-white">{current.temperature}°C</div>
-                            <div className="text-slate-400 mt-1">{current.weatherCondition}</div>
+                            <div className="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-500">{current.temperature}°C</div>
+                            <div className="text-white/60 mt-1">{current.weatherCondition}</div>
                         </div>
                         <div className="text-right space-y-2">
-                            <div className="flex items-center justify-end gap-2 text-slate-300">
+                            <div className="flex items-center justify-end gap-2 text-white/70">
                                 <span>💧</span>
                                 <span>Nem: {current.humidity}%</span>
                             </div>
-                            <div className="flex items-center justify-end gap-2 text-slate-300">
+                            <div className="flex items-center justify-end gap-2 text-white/70">
                                 <span>💨</span>
                                 <span>{current.windSpeed} km/s {getWindDirection(current.windDirection)}</span>
                             </div>
-                            <div className="flex items-center justify-end gap-2 text-slate-300">
+                            <div className="flex items-center justify-end gap-2 text-white/70">
                                 <span>🌡️</span>
                                 <span>Basınç: {current.pressure} hPa</span>
                             </div>
-                            <div className="flex items-center justify-end gap-2 text-slate-300">
+                            <div className="flex items-center justify-end gap-2 text-white/70">
                                 <span>👁️</span>
                                 <span>Görüş: {current.visibility} km</span>
                             </div>
-                            <div className="flex items-center justify-end gap-2 text-slate-300">
+                            <div className="flex items-center justify-end gap-2 text-white/70">
                                 <span>☀️</span>
                                 <span>UV İndeksi: {current.uvIndex}</span>
                             </div>
@@ -434,11 +434,11 @@ export default function WeatherPage() {
 
                     {/* Asphalt & Cabrio Index */}
                     <div className="grid grid-cols-2 gap-4 mt-6">
-                        <div className={`rounded-xl p-4 border ${getAsphaltColor(current.asphaltCondition)}`}>
+                        <div className={`rounded-xl p-4 border backdrop-blur-xl ${getAsphaltColor(current.asphaltCondition)}`}>
                             <div className="text-sm opacity-80">Asfalt Durumu</div>
                             <div className="text-2xl font-bold">{current.asphaltCondition}</div>
                         </div>
-                        <div className="rounded-xl p-4 border border-orange-400/30 bg-orange-400/10 text-orange-400">
+                        <div className="rounded-xl p-4 border border-yellow-400/30 bg-yellow-400/10 backdrop-blur-xl text-yellow-400">
                             <div className="text-sm opacity-80">Sürüş İndeksi</div>
                             <div className="text-2xl font-bold">{current.cabrioIndex}/100</div>
                         </div>
@@ -446,14 +446,14 @@ export default function WeatherPage() {
                 </div>
 
                 {/* Vehicle-Specific Tips with Tabs */}
-                <div className="bg-slate-800 rounded-2xl p-6 border border-slate-700">
+                <div className="bg-black/80 backdrop-blur-xl rounded-2xl p-6 border border-white/10 shadow-2xl shadow-yellow-500/10">
                     {/* Vehicle Tab Switcher */}
-                    <div className="flex rounded-xl bg-slate-700/50 p-1 mb-6">
+                    <div className="flex rounded-xl bg-white/5 p-1 mb-6">
                         <button
                             onClick={() => setVehicleTab('car')}
                             className={`flex-1 py-3 rounded-lg font-bold transition-all flex items-center justify-center gap-2 ${vehicleTab === 'car'
-                                    ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/30'
-                                    : 'text-slate-400 hover:text-white'
+                                    ? 'bg-gradient-to-r from-yellow-400 to-orange-500 text-black shadow-lg shadow-yellow-500/20'
+                                    : 'text-white/60 hover:text-white'
                                 }`}
                         >
                             <span className="text-xl">🚗</span>
@@ -462,8 +462,8 @@ export default function WeatherPage() {
                         <button
                             onClick={() => setVehicleTab('moto')}
                             className={`flex-1 py-3 rounded-lg font-bold transition-all flex items-center justify-center gap-2 ${vehicleTab === 'moto'
-                                    ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/30'
-                                    : 'text-slate-400 hover:text-white'
+                                    ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg shadow-orange-500/20'
+                                    : 'text-white/60 hover:text-white'
                                 }`}
                         >
                             <span className="text-xl">🏍️</span>
@@ -474,16 +474,16 @@ export default function WeatherPage() {
                     {/* Car Tips */}
                     {vehicleTab === 'car' && (
                         <>
-                            <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                            <h2 className="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-500 mb-4 flex items-center gap-2">
                                 <span>🚗</span> Araç Sürücüsü Tavsiyeleri
                             </h2>
                             <div className="grid gap-3">
                                 {getCarDrivingAdvice(current).map((advice, index) => (
-                                    <div key={index} className="flex items-start gap-3 bg-slate-700/50 rounded-xl p-3">
+                                    <div key={index} className="flex items-start gap-3 bg-white/5 backdrop-blur-xl rounded-xl p-3 border border-white/10">
                                         <span className="text-2xl">{advice.icon}</span>
                                         <div>
                                             <div className={`font-medium ${advice.color}`}>{advice.title}</div>
-                                            <div className="text-slate-400 text-sm">{advice.advice}</div>
+                                            <div className="text-white/60 text-sm">{advice.advice}</div>
                                         </div>
                                     </div>
                                 ))}
@@ -494,16 +494,16 @@ export default function WeatherPage() {
                     {/* Motorcycle Tips */}
                     {vehicleTab === 'moto' && (
                         <>
-                            <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                            <h2 className="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-red-500 mb-4 flex items-center gap-2">
                                 <span>🏍️</span> Motorsiklet Sürücüsü Tavsiyeleri
                             </h2>
                             <div className="grid gap-3">
                                 {ridingAdvices.map((advice, index) => (
-                                    <div key={index} className="flex items-start gap-3 bg-slate-700/50 rounded-xl p-3">
+                                    <div key={index} className="flex items-start gap-3 bg-white/5 backdrop-blur-xl rounded-xl p-3 border border-white/10">
                                         <span className="text-2xl">{advice.icon}</span>
                                         <div>
                                             <div className={`font-medium ${advice.color}`}>{advice.title}</div>
-                                            <div className="text-slate-400 text-sm">{advice.advice}</div>
+                                            <div className="text-white/60 text-sm">{advice.advice}</div>
                                         </div>
                                     </div>
                                 ))}
@@ -513,17 +513,17 @@ export default function WeatherPage() {
                 </div>
 
                 {/* Forecast Tabs */}
-                <div className="flex rounded-xl bg-slate-800 p-1 border border-slate-700">
+                <div className="flex rounded-xl bg-white/5 p-1 border border-white/10 backdrop-blur-xl">
                     <button
                         onClick={() => setActiveTab('daily')}
-                        className={`flex-1 py-3 rounded-lg font-medium transition-all ${activeTab === 'daily' ? 'bg-orange-500 text-white' : 'text-slate-400 hover:text-white'
+                        className={`flex-1 py-3 rounded-lg font-medium transition-all ${activeTab === 'daily' ? 'bg-gradient-to-r from-yellow-400 to-orange-500 text-black' : 'text-white/60 hover:text-white'
                             }`}
                     >
                         7 Günlük Tahmin
                     </button>
                     <button
                         onClick={() => setActiveTab('hourly')}
-                        className={`flex-1 py-3 rounded-lg font-medium transition-all ${activeTab === 'hourly' ? 'bg-orange-500 text-white' : 'text-slate-400 hover:text-white'
+                        className={`flex-1 py-3 rounded-lg font-medium transition-all ${activeTab === 'hourly' ? 'bg-gradient-to-r from-yellow-400 to-orange-500 text-black' : 'text-white/60 hover:text-white'
                             }`}
                     >
                         24 Saat
@@ -532,11 +532,11 @@ export default function WeatherPage() {
 
                 {/* Daily Forecast */}
                 {activeTab === 'daily' && (
-                    <div className="bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden">
+                    <div className="bg-black/80 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden shadow-xl shadow-yellow-500/10">
                         {daily.map((day, index) => (
                             <div
                                 key={day.date}
-                                className={`flex items-center justify-between p-4 ${index !== daily.length - 1 ? 'border-b border-slate-700' : ''}`}
+                                className={`flex items-center justify-between p-4 ${index !== daily.length - 1 ? 'border-b border-white/10' : ''}`}
                             >
                                 <div className="flex items-center gap-4">
                                     <span className="text-3xl">{day.weatherIcon}</span>
@@ -544,11 +544,11 @@ export default function WeatherPage() {
                                         <div className="text-white font-medium">
                                             {index === 0 ? 'Bugün' : day.dayName}
                                         </div>
-                                        <div className="text-slate-400 text-sm">{day.weatherCondition}</div>
+                                        <div className="text-white/60 text-sm">{day.weatherCondition}</div>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-6 text-sm">
-                                    <div className="text-slate-400">
+                                    <div className="text-white/60">
                                         <span className="text-orange-400">↑{day.tempMax}°</span>
                                         <span className="mx-1">/</span>
                                         <span className="text-blue-400">↓{day.tempMin}°</span>
@@ -556,7 +556,7 @@ export default function WeatherPage() {
                                     {day.precipitationSum > 0 && (
                                         <div className="text-blue-400">💧 {day.precipitationSum.toFixed(1)}mm</div>
                                     )}
-                                    <div className="text-slate-500 hidden sm:block">
+                                    <div className="text-white/40 hidden sm:block">
                                         🌅 {day.sunrise} · 🌇 {day.sunset}
                                     </div>
                                 </div>
@@ -567,11 +567,11 @@ export default function WeatherPage() {
 
                 {/* Hourly Forecast */}
                 {activeTab === 'hourly' && (
-                    <div className="bg-slate-800 rounded-2xl border border-slate-700 p-4 overflow-x-auto">
+                    <div className="bg-black/80 backdrop-blur-xl rounded-2xl border border-white/10 p-4 overflow-x-auto shadow-xl shadow-yellow-500/10">
                         <div className="flex gap-4 min-w-max">
                             {hourly.map((hour, index) => (
                                 <div key={hour.time} className="flex flex-col items-center gap-2 min-w-[60px]">
-                                    <div className="text-slate-400 text-sm">
+                                    <div className="text-white/60 text-sm">
                                         {index === 0 ? 'Şimdi' : hour.hour}
                                     </div>
                                     <div className="text-2xl">{hour.weatherIcon}</div>
@@ -579,7 +579,7 @@ export default function WeatherPage() {
                                     {hour.precipitation > 0 && (
                                         <div className="text-blue-400 text-xs">💧{hour.precipitation}mm</div>
                                     )}
-                                    <div className="text-slate-500 text-xs">💨{hour.windSpeed}</div>
+                                    <div className="text-white/40 text-xs">💨{hour.windSpeed}</div>
                                 </div>
                             ))}
                         </div>
@@ -587,30 +587,30 @@ export default function WeatherPage() {
                 )}
 
                 {/* UV Index Info */}
-                <div className="bg-slate-800 rounded-2xl p-6 border border-slate-700">
-                    <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                <div className="bg-black/80 backdrop-blur-xl rounded-2xl p-6 border border-white/10 shadow-xl shadow-yellow-500/10">
+                    <h2 className="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-500 mb-4 flex items-center gap-2">
                         <span>☀️</span> UV İndeksi Bilgisi
                     </h2>
                     <div className="grid grid-cols-5 gap-2 text-center text-sm">
-                        <div className={`p-2 rounded-lg ${current.uvIndex < 3 ? 'bg-green-500/30 ring-2 ring-green-400' : 'bg-green-500/10'}`}>
+                        <div className={`p-2 rounded-lg backdrop-blur-xl ${current.uvIndex < 3 ? 'bg-green-500/30 ring-2 ring-green-400' : 'bg-green-500/10'}`}>
                             <div className="text-green-400 font-bold">0-2</div>
-                            <div className="text-slate-400 text-xs">Düşük</div>
+                            <div className="text-white/60 text-xs">Düşük</div>
                         </div>
-                        <div className={`p-2 rounded-lg ${current.uvIndex >= 3 && current.uvIndex < 6 ? 'bg-yellow-500/30 ring-2 ring-yellow-400' : 'bg-yellow-500/10'}`}>
+                        <div className={`p-2 rounded-lg backdrop-blur-xl ${current.uvIndex >= 3 && current.uvIndex < 6 ? 'bg-yellow-500/30 ring-2 ring-yellow-400' : 'bg-yellow-500/10'}`}>
                             <div className="text-yellow-400 font-bold">3-5</div>
-                            <div className="text-slate-400 text-xs">Orta</div>
+                            <div className="text-white/60 text-xs">Orta</div>
                         </div>
-                        <div className={`p-2 rounded-lg ${current.uvIndex >= 6 && current.uvIndex < 8 ? 'bg-orange-500/30 ring-2 ring-orange-400' : 'bg-orange-500/10'}`}>
+                        <div className={`p-2 rounded-lg backdrop-blur-xl ${current.uvIndex >= 6 && current.uvIndex < 8 ? 'bg-orange-500/30 ring-2 ring-orange-400' : 'bg-orange-500/10'}`}>
                             <div className="text-orange-400 font-bold">6-7</div>
-                            <div className="text-slate-400 text-xs">Yüksek</div>
+                            <div className="text-white/60 text-xs">Yüksek</div>
                         </div>
-                        <div className={`p-2 rounded-lg ${current.uvIndex >= 8 && current.uvIndex < 11 ? 'bg-red-500/30 ring-2 ring-red-400' : 'bg-red-500/10'}`}>
+                        <div className={`p-2 rounded-lg backdrop-blur-xl ${current.uvIndex >= 8 && current.uvIndex < 11 ? 'bg-red-500/30 ring-2 ring-red-400' : 'bg-red-500/10'}`}>
                             <div className="text-red-400 font-bold">8-10</div>
-                            <div className="text-slate-400 text-xs">Ç. Yüksek</div>
+                            <div className="text-white/60 text-xs">Ç. Yüksek</div>
                         </div>
-                        <div className={`p-2 rounded-lg ${current.uvIndex >= 11 ? 'bg-purple-500/30 ring-2 ring-purple-400' : 'bg-purple-500/10'}`}>
+                        <div className={`p-2 rounded-lg backdrop-blur-xl ${current.uvIndex >= 11 ? 'bg-purple-500/30 ring-2 ring-purple-400' : 'bg-purple-500/10'}`}>
                             <div className="text-purple-400 font-bold">11+</div>
-                            <div className="text-slate-400 text-xs">Aşırı</div>
+                            <div className="text-white/60 text-xs">Aşırı</div>
                         </div>
                     </div>
                 </div>
