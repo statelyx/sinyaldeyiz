@@ -46,7 +46,6 @@ export default function AdminPage() {
 
     setIsAuthorized(true)
     await loadData()
-    setLoading(false)
   }
 
   const loadData = async () => {
@@ -81,13 +80,10 @@ export default function AdminPage() {
         setUsers(usersData)
       }
 
-      // Load vehicles with user info
+      // Load vehicles
       const { data: vehiclesData, error: vehiclesError } = await supabase
         .from('vehicles')
-        .select(`
-          *,
-          profiles!inner(nickname)
-        `)
+        .select('*')
         .order('created_at', { ascending: false })
         .limit(50)
 
@@ -115,6 +111,8 @@ export default function AdminPage() {
     } catch (err) {
       console.error('Load data error:', err)
       setError('Veriler yüklenirken bir hata oluştu')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -270,24 +268,22 @@ export default function AdminPage() {
                   <table className="w-full">
                     <thead>
                       <tr className="border-b border-white/10">
-                        <th className="text-left py-3 px-4 text-white/60 text-sm font-medium">Sahibi</th>
-                        <th className="text-left py-3 px-4 text-white/60 text-sm font-medium">Catalog ID</th>
+                        <th className="text-left py-3 px-4 text-white/60 text-sm font-medium">User ID</th>
+                        <th className="text-left py-3 px-4 text-white/60 text-sm font-medium">Marka</th>
+                        <th className="text-left py-3 px-4 text-white/60 text-sm font-medium">Model</th>
                         <th className="text-left py-3 px-4 text-white/60 text-sm font-medium">Yıl</th>
-                        <th className="text-left py-3 px-4 text-white/60 text-sm font-medium">Plaka</th>
                         <th className="text-left py-3 px-4 text-white/60 text-sm font-medium">Durum</th>
                       </tr>
                     </thead>
                     <tbody>
                       {vehicles.map((vehicle) => (
                         <tr key={vehicle.id} className="border-b border-white/5 hover:bg-white/5">
-                          <td className="py-3 px-4 font-medium">
-                            {(vehicle as any).profiles?.nickname || '-'}
-                          </td>
                           <td className="py-3 px-4 text-yellow-400 font-mono text-sm">
-                            {vehicle.catalog_id || '-'}
+                            {vehicle.user_id?.slice(0, 8)}...
                           </td>
+                          <td className="py-3 px-4 font-medium">{vehicle.brand || '-'}</td>
+                          <td className="py-3 px-4 text-white/60">{vehicle.model || '-'}</td>
                           <td className="py-3 px-4 text-white/60">{vehicle.year || '-'}</td>
-                          <td className="py-3 px-4 text-white/60 font-mono">{vehicle.plate_number || '-'}</td>
                           <td className="py-3 px-4">
                             {vehicle.is_primary ? (
                               <span className="px-2 py-1 bg-green-500/20 text-green-400 rounded-full text-xs">Birincil</span>
@@ -367,7 +363,7 @@ export default function AdminPage() {
                   return (
                     <div
                       key={brand.id}
-                      className="aspect-square p-4 bg-white/5 rounded-xl border border-white/10 hover:border-yellow-400/50 transition-all flex items-center justify-center group"
+                      className="aspect-square p-4 bg-white/5 rounded-xl border border-white/10 hover:border-yellow-400/50 transition-all flex items-center justify-center group relative"
                     >
                       <img
                         src={iconPath}

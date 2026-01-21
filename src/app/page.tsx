@@ -34,16 +34,16 @@ export default function HomePage() {
   const { user, loading, authState, isOnboarded } = useAuth()
   const router = useRouter()
 
-  // Redirect authenticated users
+  // Redirect authenticated users ONLY when loading is complete
+  // Don't redirect immediately - let user see the landing page first
   useEffect(() => {
-    if (!loading && user) {
-      if (isOnboarded) {
-        router.push('/dashboard')
-      } else {
-        router.push('/onboarding')
-      }
+    // Only redirect if explicitly authenticated AND loading is done
+    if (!loading && authState === 'authenticated_onboarded') {
+      router.push('/dashboard')
+    } else if (!loading && authState === 'authenticated_not_onboarded') {
+      router.push('/onboarding')
     }
-  }, [user, loading, isOnboarded, router])
+  }, [authState, loading, router])
 
   const openLogin = () => {
     setAuthMode('login')
