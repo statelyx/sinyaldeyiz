@@ -11,161 +11,230 @@ export default function ThreeBackground() {
     useEffect(() => {
         if (!containerRef.current) return;
 
-        // Check for reduced motion preference
         const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
         // Scene setup
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.z = 30;
+        camera.position.set(0, 15, 25);
+        camera.lookAt(0, 0, 0);
 
-        // Renderer with optimized settings - PERFORMANCE OPTIMIZED
         const renderer = new THREE.WebGLRenderer({
             alpha: true,
-            antialias: false, // Disabled for better performance
+            antialias: false,
             powerPreference: 'high-performance'
         });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.0)); // Reduced for performance
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
         renderer.setClearColor(0x000000, 0);
         containerRef.current.appendChild(renderer.domElement);
 
-        // Torus Knot with blue/purple glow - OPTIMIZED
-        const torusKnotGeometry = new THREE.TorusKnotGeometry(8, 0.8, 48, 8); // Reduced segments
-        const torusKnotMaterial = new THREE.MeshBasicMaterial({
-            color: 0x6366f1,
-            wireframe: true,
-            transparent: true,
-            opacity: 0.6,
-        });
-        const torusKnot = new THREE.Mesh(torusKnotGeometry, torusKnotMaterial);
-        torusKnot.position.set(-15, 0, -10);
-        scene.add(torusKnot);
+        // F1 Track - Oval circuit
+        const createTrack = () => {
+            const trackGroup = new THREE.Group();
 
-        // Second Torus with purple glow - OPTIMIZED
-        const torusKnot2Geometry = new THREE.TorusKnotGeometry(5, 0.5, 36, 6); // Reduced segments
-        const torusKnot2Material = new THREE.MeshBasicMaterial({
-            color: 0xa855f7,
-            wireframe: true,
-            transparent: true,
-            opacity: 0.4,
-        });
-        const torusKnot2 = new THREE.Mesh(torusKnot2Geometry, torusKnot2Material);
-        torusKnot2.position.set(20, -5, -15);
-        scene.add(torusKnot2);
+            // Outer track boundary
+            const outerTrackPoints: THREE.Vector3[] = [];
+            const innerTrackPoints: THREE.Vector3[] = [];
 
-        // Lamborghini-like wedge car silhouette (original, wireframe)
-        const createCarShape = () => {
+            for (let i = 0; i <= 64; i++) {
+                const t = (i / 64) * Math.PI * 2;
+                // F1 oval shape
+                const outerX = Math.cos(t) * 18 + Math.sin(t * 2) * 3;
+                const outerZ = Math.sin(t) * 12;
+                const innerX = Math.cos(t) * 12 + Math.sin(t * 2) * 2;
+                const innerZ = Math.sin(t) * 8;
+
+                outerTrackPoints.push(new THREE.Vector3(outerX, 0, outerZ));
+                innerTrackPoints.push(new THREE.Vector3(innerX, 0, innerZ));
+            }
+
+            // Outer line (neon yellow)
+            const outerGeometry = new THREE.BufferGeometry().setFromPoints(outerTrackPoints);
+            const outerMaterial = new THREE.LineBasicMaterial({
+                color: 0xfacc15,
+                transparent: true,
+                opacity: 0.5,
+                linewidth: 3,
+            });
+            const outerLine = new THREE.Line(outerGeometry, outerMaterial);
+            trackGroup.add(outerLine);
+
+            // Inner line (neon orange)
+            const innerGeometry = new THREE.BufferGeometry().setFromPoints(innerTrackPoints);
+            const innerMaterial = new THREE.LineBasicMaterial({
+                color: 0xf97316,
+                transparent: true,
+                opacity: 0.5,
+                linewidth: 3,
+            });
+            const innerLine = new THREE.Line(innerGeometry, innerMaterial);
+            trackGroup.add(innerLine);
+
+            // Track surface grid
+            const gridHelper = new THREE.GridHelper(50, 50, 0x333333, 0x222222);
+            gridHelper.position.y = -0.1;
+            trackGroup.add(gridHelper);
+
+            // Start/Finish line
+            const startLineGeometry = new THREE.BufferGeometry().setFromPoints([
+                new THREE.Vector3(15, 0.01, 0),
+                new THREE.Vector3(15, 0.01, -12),
+            ]);
+            const startLineMaterial = new THREE.LineBasicMaterial({ color: 0xffffff, opacity: 0.8 });
+            const startLine = new THREE.Line(startLineGeometry, startLineMaterial);
+            trackGroup.add(startLine);
+
+            return trackGroup;
+        };
+
+        const track = createTrack();
+        scene.add(track);
+
+        // F1 Car shape
+        const createF1Car = (color: number, teamName: string) => {
             const carGroup = new THREE.Group();
 
-            // Car body - low wedge shape
-            const bodyPoints = [
-                new THREE.Vector3(-3, 0, 0),      // front bottom
-                new THREE.Vector3(-2.8, 0.3, 0),  // front nose
-                new THREE.Vector3(-1, 0.8, 0),    // windshield start
-                new THREE.Vector3(0.5, 1.2, 0),   // roof peak
-                new THREE.Vector3(2.5, 1, 0),     // roof end
-                new THREE.Vector3(3.2, 0.4, 0),   // rear end
-                new THREE.Vector3(3.5, 0, 0),     // rear bottom
-            ];
+            // Main body - sleek F1 shape
+            const bodyShape = new THREE.Shape();
+            bodyShape.moveTo(-2.5, 0);
+            bodyShape.lineTo(-2.2, 0.3);  // Front nose
+            bodyShape.lineTo(-1.5, 0.6);  // Nose cone
+            bodyShape.lineTo(-0.5, 0.8);  // Front wing
+            bodyShape.lineTo(0.5, 1.0);   // Cockpit
+            bodyShape.lineTo(1.5, 0.9);   // Air intake
+            bodyShape.lineTo(2.5, 0.5);   // Engine cover
+            bodyShape.lineTo(3.2, 0.2);   // Rear
+            bodyShape.lineTo(3.5, 0);     // Rear end
+            bodyShape.lineTo(3.2, -0.1);
+            bodyShape.lineTo(2.5, -0.3);  // Rear diffuser
+            bodyShape.lineTo(1.5, -0.4);
+            bodyShape.lineTo(-0.5, -0.3);
+            bodyShape.lineTo(-2.2, -0.2);
+            bodyShape.lineTo(-2.5, 0);
 
-            // Create wireframe outline
-            const bodyGeometry = new THREE.BufferGeometry().setFromPoints(bodyPoints);
-            const bodyMaterial = new THREE.LineBasicMaterial({
-                color: 0xfacc15, // Neon yellow
+            const bodyGeometry = new THREE.ExtrudeGeometry(bodyShape, {
+                depth: 1.2,
+                bevelEnabled: true,
+                bevelThickness: 0.1,
+                bevelSize: 0.1,
+                bevelSegments: 1,
+            });
+
+            const bodyMaterial = new THREE.MeshBasicMaterial({
+                color: color,
+                wireframe: true,
                 transparent: true,
-                opacity: 0.8,
-                linewidth: 2,
+                opacity: 0.9,
             });
-            const bodyLine = new THREE.Line(bodyGeometry, bodyMaterial);
-            carGroup.add(bodyLine);
+            const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+            body.rotation.y = Math.PI / 2;
+            carGroup.add(body);
 
-            // Mirror for 3D effect
-            const bodyPoints2 = bodyPoints.map(p => new THREE.Vector3(p.x, p.y, 1.5));
-            const bodyGeometry2 = new THREE.BufferGeometry().setFromPoints(bodyPoints2);
-            const bodyLine2 = new THREE.Line(bodyGeometry2, bodyMaterial);
-            carGroup.add(bodyLine2);
+            // Front wing
+            const frontWingGeometry = new THREE.BoxGeometry(0.2, 0.1, 3);
+            const frontWing = new THREE.Mesh(frontWingGeometry, bodyMaterial);
+            frontWing.position.set(-2.3, 0.2, 0);
+            frontWing.rotation.y = Math.PI / 2;
+            carGroup.add(frontWing);
 
-            // Connect front and back
-            const connectMaterial = new THREE.LineBasicMaterial({
-                color: 0xf97316, // Orange accent
-                transparent: true,
-                opacity: 0.6,
-            });
+            // Rear wing
+            const rearWingGeometry = new THREE.BoxGeometry(0.15, 0.6, 2);
+            const rearWing = new THREE.Mesh(rearWingGeometry, bodyMaterial);
+            rearWing.position.set(3.3, 0.5, 0);
+            rearWing.rotation.y = Math.PI / 2;
+            carGroup.add(rearWing);
 
-            bodyPoints.forEach((p, i) => {
-                const connectorGeometry = new THREE.BufferGeometry().setFromPoints([
-                    p,
-                    new THREE.Vector3(p.x, p.y, 1.5)
-                ]);
-                const connector = new THREE.Line(connectorGeometry, connectMaterial);
-                carGroup.add(connector);
-            });
-
-            // Wheels (circles)
-            const wheelGeometry = new THREE.CircleGeometry(0.5, 16);
-            const wheelMaterial = new THREE.LineBasicMaterial({
-                color: 0xfacc15,
+            // Wheels
+            const wheelGeometry = new THREE.TorusGeometry(0.35, 0.12, 8, 16);
+            const wheelMaterial = new THREE.MeshBasicMaterial({
+                color: 0x333333,
+                wireframe: true,
                 transparent: true,
                 opacity: 0.7,
             });
 
-            // Front wheel
-            const frontWheelEdges = new THREE.EdgesGeometry(wheelGeometry);
-            const frontWheel = new THREE.LineSegments(frontWheelEdges, wheelMaterial);
-            frontWheel.position.set(-2, 0, 0);
-            carGroup.add(frontWheel);
+            const wheelPositions = [
+                [-2, 0, 0.8],   // Front left
+                [-2, 0, -0.8],  // Front right
+                [2.2, 0, 0.9],  // Rear left
+                [2.2, 0, -0.9], // Rear right
+            ];
 
-            // Rear wheel
-            const rearWheelEdges = new THREE.EdgesGeometry(wheelGeometry);
-            const rearWheel = new THREE.LineSegments(rearWheelEdges, wheelMaterial);
-            rearWheel.position.set(2.5, 0, 0);
-            carGroup.add(rearWheel);
+            wheelPositions.forEach(pos => {
+                const wheel = new THREE.Mesh(wheelGeometry, wheelMaterial);
+                wheel.position.set(pos[0], pos[1], pos[2]);
+                wheel.rotation.y = Math.PI / 2;
+                carGroup.add(wheel);
+            });
+
+            // Halo (cockpit protection)
+            const haloGeometry = new THREE.TorusGeometry(0.3, 0.05, 8, 16, Math.PI);
+            const haloMaterial = new THREE.MeshBasicMaterial({
+                color: 0x666666,
+                transparent: true,
+                opacity: 0.8,
+            });
+            const halo = new THREE.Mesh(haloGeometry, haloMaterial);
+            halo.position.set(0.5, 1.1, 0);
+            halo.rotation.y = Math.PI / 2;
+            halo.rotation.x = -Math.PI / 2;
+            carGroup.add(halo);
 
             return carGroup;
         };
 
-        const car = createCarShape();
-        car.position.set(10, -8, 5);
-        car.rotation.y = -0.3;
-        scene.add(car);
+        // Create 3 F1 cars with different team colors
+        const car1 = createF1Car(0xfacc15, 'Mercedes'); // Yellow - Leading
+        const car2 = createF1Car(0xff0000, 'Ferrari');  // Red
+        const car3 = createF1Car(0x00ff00, 'Aston');   // Green
 
-        // Drift arc trail
-        const trailPoints: THREE.Vector3[] = [];
-        for (let i = 0; i < 50; i++) {
-            const t = i / 50;
-            const x = 10 + Math.sin(t * Math.PI * 2) * 8;
-            const z = 5 + Math.cos(t * Math.PI * 2) * 4 - t * 8;
-            trailPoints.push(new THREE.Vector3(x, -8, z));
-        }
+        // Cars group
+        const carsGroup = new THREE.Group();
+        carsGroup.add(car1);
+        carsGroup.add(car2);
+        carsGroup.add(car3);
+        scene.add(carsGroup);
 
-        const trailGeometry = new THREE.BufferGeometry().setFromPoints(trailPoints);
-        const trailMaterial = new THREE.LineBasicMaterial({
-            color: 0xf97316,
-            transparent: true,
-            opacity: 0.3,
-        });
-        const trail = new THREE.Line(trailGeometry, trailMaterial);
-        scene.add(trail);
+        // Speed trail particles for cars
+        const createSpeedTrails = (carColor: number) => {
+            const trailGeometry = new THREE.BufferGeometry();
+            const positions = new Float32Array(50 * 3);
+            trailGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
 
-        // Floating particles - OPTIMIZED
-        const particlesGeometry = new THREE.BufferGeometry();
-        const particlesCount = 80; // Reduced for performance
-        const posArray = new Float32Array(particlesCount * 3);
+            const trailMaterial = new THREE.PointsMaterial({
+                color: carColor,
+                size: 0.15,
+                transparent: true,
+                opacity: 0.6,
+            });
 
-        for (let i = 0; i < particlesCount * 3; i++) {
-            posArray[i] = (Math.random() - 0.5) * 100;
-        }
+            const trail = new THREE.Points(trailGeometry, trailMaterial);
+            return { mesh: trail, positions: [] as THREE.Vector3[] };
+        };
 
-        particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-        const particlesMaterial = new THREE.PointsMaterial({
-            size: 0.1,
-            color: 0xfacc15,
-            transparent: true,
-            opacity: 0.4,
-        });
-        const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
-        scene.add(particlesMesh);
+        const trail1 = createSpeedTrails(0xfacc15);
+        const trail2 = createSpeedTrails(0xff0000);
+        const trail3 = createSpeedTrails(0x00ff00);
+
+        scene.add(trail1.mesh);
+        scene.add(trail2.mesh);
+        scene.add(trail3.mesh);
+
+        // Racing line positions on track
+        const getTrackPosition = (progress: number, offset: number = 0) => {
+            const t = progress * Math.PI * 2;
+            const x = Math.cos(t) * 15 + Math.sin(t * 2) * 2.5 + offset * Math.cos(t + Math.PI / 2);
+            const z = Math.sin(t) * 10 + offset * Math.sin(t + Math.PI / 2);
+            return { x, z };
+        };
+
+        // Car states
+        const carStates = [
+            { car: car1, progress: 0, speed: 0.003, offset: 0, trail: trail1 },
+            { car: car2, progress: 0.33, speed: 0.0028, offset: 1.5, trail: trail2 },
+            { car: car3, progress: 0.66, speed: 0.0025, offset: -1.5, trail: trail3 },
+        ];
 
         // Mouse move handler
         const handleMouseMove = (event: MouseEvent) => {
@@ -184,36 +253,71 @@ export default function ThreeBackground() {
             time += 0.01;
 
             if (!prefersReducedMotion) {
-                // Lerp mouse position for smooth parallax
-                mouseRef.current.x += (targetRef.current.x - mouseRef.current.x) * 0.05;
-                mouseRef.current.y += (targetRef.current.y - mouseRef.current.y) * 0.05;
+                // Smooth mouse following
+                mouseRef.current.x += (targetRef.current.x - mouseRef.current.x) * 0.08;
+                mouseRef.current.y += (targetRef.current.y - mouseRef.current.y) * 0.08;
 
-                // Rotate torus knots
-                torusKnot.rotation.x += 0.003;
-                torusKnot.rotation.y += 0.005;
-                torusKnot.position.y = Math.sin(time) * 2;
+                // Update cars position on track
+                carStates.forEach((state, index) => {
+                    // Update progress
+                    state.progress += state.speed;
+                    if (state.progress > 1) state.progress -= 1;
 
-                torusKnot2.rotation.x -= 0.004;
-                torusKnot2.rotation.y -= 0.003;
-                torusKnot2.position.y = Math.cos(time * 0.8) * 3;
+                    // Get position on track
+                    const pos = getTrackPosition(state.progress, state.offset);
 
-                // Car drift animation
-                car.position.x = 10 + Math.sin(time * 0.5) * 3;
-                car.position.z = 5 + Math.cos(time * 0.5) * 2;
-                car.rotation.y = -0.3 + Math.sin(time * 0.5) * 0.2;
+                    // Add mouse influence - cars react to cursor
+                    const mouseInfluenceX = mouseRef.current.x * 3;
+                    const mouseInfluenceZ = mouseRef.current.y * 2;
 
-                // Parallax effect
-                scene.rotation.y = mouseRef.current.x * 0.1;
-                scene.rotation.x = mouseRef.current.y * 0.05;
+                    state.car.position.x = pos.x + mouseInfluenceX * (0.3 + index * 0.1);
+                    state.car.position.z = pos.z + mouseInfluenceZ * (0.3 + index * 0.1);
 
-                // Floating particles
-                particlesMesh.rotation.y += 0.0005;
+                    // Rotate car to face direction
+                    const nextPos = getTrackPosition(state.progress + 0.01, state.offset);
+                    const angle = Math.atan2(nextPos.z - pos.z, nextPos.x - pos.x);
+                    state.car.rotation.y = angle;
+
+                    // Update trail
+                    state.trail.positions.push(new THREE.Vector3(pos.x, 0.5, pos.z));
+                    if (state.trail.positions.length > 50) {
+                        state.trail.positions.shift();
+                    }
+
+                    const positions = state.trail.mesh.geometry.attributes.position.array as Float32Array;
+                    for (let i = 0; i < state.trail.positions.length; i++) {
+                        positions[i * 3] = state.trail.positions[i].x + mouseInfluenceX * 0.2;
+                        positions[i * 3 + 1] = 0.5;
+                        positions[i * 3 + 2] = state.trail.positions[i].z + mouseInfluenceZ * 0.2;
+                    }
+                    state.trail.mesh.geometry.attributes.position.needsUpdate = true;
+                    state.trail.mesh.geometry.setDrawRange(0, state.trail.positions.length);
+                });
+
+                // Camera follows action with mouse influence
+                camera.position.x = mouseRef.current.x * 5;
+                camera.position.y = 15 + mouseRef.current.y * 3;
+                camera.lookAt(
+                    mouseRef.current.x * 2,
+                    0,
+                    mouseRef.current.y * 2
+                );
+
+                // Subtle track rotation
+                track.rotation.y = mouseRef.current.x * 0.05;
+
+                // Pulsing effect on track lines
+                track.children.forEach((child, i) => {
+                    if (child instanceof THREE.Line && child.material) {
+                        const material = child.material as THREE.LineBasicMaterial;
+                        material.opacity = 0.4 + Math.sin(time * 2 + i) * 0.15;
+                    }
+                });
             }
 
             renderer.render(scene, camera);
         };
 
-        // Start animation or render static frame
         if (prefersReducedMotion) {
             renderer.render(scene, camera);
         } else {
@@ -235,23 +339,18 @@ export default function ThreeBackground() {
             window.removeEventListener('resize', handleResize);
             if (animationId) cancelAnimationFrame(animationId);
 
-            // Dispose geometries
-            torusKnotGeometry.dispose();
-            torusKnot2Geometry.dispose();
-            particlesGeometry.dispose();
+            scene.traverse((object) => {
+                if (object instanceof THREE.Mesh) {
+                    object.geometry?.dispose();
+                    if (object.material instanceof THREE.Material) {
+                        object.material.dispose();
+                    }
+                }
+            });
 
-            // Dispose materials
-            torusKnotMaterial.dispose();
-            torusKnot2Material.dispose();
-            particlesMaterial.dispose();
-
-            // Dispose renderer
             renderer.dispose();
-
-            // Clear scene
             scene.clear();
 
-            // Remove DOM element
             if (containerRef.current && renderer.domElement && containerRef.current.contains(renderer.domElement)) {
                 containerRef.current.removeChild(renderer.domElement);
             }
