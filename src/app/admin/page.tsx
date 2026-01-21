@@ -6,13 +6,14 @@ import { createSupabase } from '@/lib/supabase/client'
 import { useAuth } from '@/components/providers/supabase-provider'
 
 // Simple admin check (in production, use proper RBAC)
-const ADMIN_EMAILS = ['statelyxx@gmail.com', 'admin@sinyaldeyiz.com'] // Replace with actual admin emails
+const ADMIN_EMAILS = ['statelyxx@gmail.com', 'admin@sinyaldeyiz.com']
 
 export default function AdminPage() {
   const router = useRouter()
   const { user, loading: authLoading } = useAuth()
   const [isAuthorized, setIsAuthorized] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'users' | 'vehicles' | 'brands' | 'icons'>('users')
   const [stats, setStats] = useState({
     totalUsers: 0,
@@ -38,66 +39,92 @@ export default function AdminPage() {
       return
     }
 
-    // Check if user email is in admin list
     if (!ADMIN_EMAILS.includes(user.email)) {
       router.push('/')
       return
     }
 
     setIsAuthorized(true)
-    loadData()
+    await loadData()
     setLoading(false)
   }
 
   const loadData = async () => {
-    const supabase = createSupabase()
+    try {
+      const supabase = createSupabase()
 
-    // Load stats
-    const [{ count: userCount }, { count: vehicleCount }, { count: brandCount }, { count: signalCount }] = await Promise.all([
-      supabase.from('profiles').select('*', { count: 'exact', head: true }),
-      supabase.from('vehicles').select('*', { count: 'exact', head: true }),
-      supabase.from('vehicle_brands').select('*', { count: 'exact', head: true }),
-      supabase.from('location_status').select('*', { count: 'exact', head: true }).eq('is_visible', true),
-    ])
+      // Load stats
+      const [userResult, vehicleResult, brandResult, signalResult] = await Promise.all([
+        supabase.from('profiles').select('*', { count: 'exact', head: true }),
+        supabase.from('vehicles').select('*', { count: 'exact', head: true }),
+        supabase.from('vehicle_brands').select('*', { count: 'exact', head: true }),
+        supabase.from('location_status').select('*', { count: 'exact', head: true }).eq('is_visible', true),
+      ])
 
-    setStats({
-      totalUsers: userCount || 0,
-      totalVehicles: vehicleCount || 0,
-      totalBrands: brandCount || 0,
-      activeSignals: signalCount || 0,
-    })
+      setStats({
+        totalUsers: userResult.count || 0,
+        totalVehicles: vehicleResult.count || 0,
+        totalBrands: brandResult.count || 0,
+        activeSignals: signalResult.count || 0,
+      })
 
-    // Load users
-    const { data: usersData } = await supabase
-      .from('profiles')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(50)
+      // Load users
+      const { data: usersData, error: usersError } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(50)
 
-    if (usersData) setUsers(usersData)
+      if (usersError) {
+        console.error('Users error:', usersError)
+      } else if (usersData) {
+        setUsers(usersData)
+      }
 
-    // Load vehicles with user info
-    const { data: vehiclesData } = await supabase
-      .from('vehicles')
-      .select('*, profiles(nickname)')
-      .order('created_at', { ascending: false })
-      .limit(50)
+      // Load vehicles with user info
+      const { data: vehiclesData, error: vehiclesError } = await supabase
+        .from('vehicles')
+        .select(`
+          *,
+          profiles!inner(nickname)
+        `)
+        .order('created_at', { ascending: false })
+        .limit(50)
 
-    if (vehiclesData) setVehicles(vehiclesData)
+      if (vehiclesError) {
+        console.error('Vehicles error:', vehiclesError)
+      } else if (vehiclesData) {
+        setVehicles(vehiclesData)
+      }
 
-    // Load brands
-    const { data: brandsData } = await supabase
-      .from('vehicle_brands')
-      .select('*')
-      .order('name', { ascending: true })
+      // Load brands
+      const { data: brandsData, error: brandsError } = await supabase
+        .from('vehicle_brands')
+        .select('*')
+        .order('name', { ascending: true })
 
-    if (brandsData) setBrands(brandsData)
+      if (brandsError) {
+        console.error('Brands error:', brandsError)
+      } else if (brandsData) {
+        setBrands(brandsData)
+      }
+
+      if (usersError || vehiclesError || brandsError) {
+        setError('Veriler yüklenirken bazı hatalar oluştu. Console\'u kontrol edin.')
+      }
+    } catch (err) {
+      console.error('Load data error:', err)
+      setError('Veriler yüklenirken bir hata oluştu')
+    }
   }
 
   if (loading || authLoading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-yellow-400 border-t-transparent rounded-full animate-spin" />
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-yellow-400 border-t-transparent rounded-full animate-spin" />
+          <p className="text-white/60">Yükleniyor...</p>
+        </div>
       </div>
     )
   }
@@ -117,12 +144,19 @@ export default function AdminPage() {
               Sinyal<span className="text-yellow-400">deyiz</span> Admin
             </h1>
           </div>
-          <button
-            onClick={() => router.push('/dashboard')}
-            className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm transition-colors"
-          >
-            ← Panele Dön
-          </button>
+          <div className="flex items-center gap-3">
+            {error && (
+              <div className="px-4 py-2 bg-red-500/20 border border-red-500/50 rounded-lg text-red-400 text-sm">
+                {error}
+              </div>
+            )}
+            <button
+              onClick={() => router.push('/dashboard')}
+              className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm transition-colors"
+            >
+              ← Panele Dön
+            </button>
+          </div>
         </div>
       </header>
 
@@ -159,10 +193,11 @@ export default function AdminPage() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
-              className={`px-6 py-3 rounded-xl font-medium transition-all whitespace-nowrap flex items-center gap-2 ${activeTab === tab.id
-                ? 'bg-gradient-to-r from-yellow-400 to-orange-500 text-black'
-                : 'bg-white/5 text-white/70 hover:bg-white/10'
-                }`}
+              className={`px-6 py-3 rounded-xl font-medium transition-all whitespace-nowrap flex items-center gap-2 ${
+                activeTab === tab.id
+                  ? 'bg-gradient-to-r from-yellow-400 to-orange-500 text-black'
+                  : 'bg-white/5 text-white/70 hover:bg-white/10'
+              }`}
             >
               <span>{tab.icon}</span>
               <span>{tab.label}</span>
@@ -174,115 +209,157 @@ export default function AdminPage() {
         <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden">
           {activeTab === 'users' && (
             <div className="p-6">
-              <h2 className="text-xl font-bold mb-4">Kullanıcı Listesi</h2>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-white/10">
-                      <th className="text-left py-3 px-4 text-white/60 text-sm font-medium">Kullanıcı</th>
-                      <th className="text-left py-3 px-4 text-white/60 text-sm font-medium">Email</th>
-                      <th className="text-left py-3 px-4 text-white/60 text-sm font-medium">Şehir</th>
-                      <th className="text-left py-3 px-4 text-white/60 text-sm font-medium">Kayıt Tarihi</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {users.map((user) => (
-                      <tr key={user.id} className="border-b border-white/5 hover:bg-white/5">
-                        <td className="py-3 px-4">
-                          <div className="flex items-center gap-3">
-                            {user.avatar_url && (
-                              <img src={user.avatar_url} alt="" className="w-8 h-8 rounded-full" />
-                            )}
-                            <span className="font-medium">{user.nickname}</span>
-                          </div>
-                        </td>
-                        <td className="py-3 px-4 text-white/60">{user.email || '-'}</td>
-                        <td className="py-3 px-4 text-white/60">{user.city || '-'}</td>
-                        <td className="py-3 px-4 text-white/60">
-                          {new Date(user.created_at).toLocaleDateString('tr-TR')}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold">Kullanıcı Listesi</h2>
+                <span className="text-sm text-white/60">{users.length} kullanıcı</span>
               </div>
+              {users.length === 0 ? (
+                <div className="text-center py-12 text-white/40">
+                  <p className="text-lg mb-2">📭</p>
+                  <p>Henüz kullanıcı yok</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-white/10">
+                        <th className="text-left py-3 px-4 text-white/60 text-sm font-medium">Kullanıcı</th>
+                        <th className="text-left py-3 px-4 text-white/60 text-sm font-medium">Email</th>
+                        <th className="text-left py-3 px-4 text-white/60 text-sm font-medium">Şehir</th>
+                        <th className="text-left py-3 px-4 text-white/60 text-sm font-medium">Kayıt Tarihi</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {users.map((user) => (
+                        <tr key={user.id} className="border-b border-white/5 hover:bg-white/5">
+                          <td className="py-3 px-4">
+                            <div className="flex items-center gap-3">
+                              {user.avatar_url && (
+                                <img src={user.avatar_url} alt="" className="w-8 h-8 rounded-full bg-white/10" />
+                              )}
+                              <span className="font-medium">{user.nickname}</span>
+                            </div>
+                          </td>
+                          <td className="py-3 px-4 text-white/60 text-sm">{user.email || '-'}</td>
+                          <td className="py-3 px-4 text-white/60">{user.city || '-'}</td>
+                          <td className="py-3 px-4 text-white/60 text-sm">
+                            {new Date(user.created_at).toLocaleDateString('tr-TR')}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           )}
 
           {activeTab === 'vehicles' && (
             <div className="p-6">
-              <h2 className="text-xl font-bold mb-4">Araç Listesi</h2>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-white/10">
-                      <th className="text-left py-3 px-4 text-white/60 text-sm font-medium">Sahibi</th>
-                      <th className="text-left py-3 px-4 text-white/60 text-sm font-medium">Marka</th>
-                      <th className="text-left py-3 px-4 text-white/60 text-sm font-medium">Model</th>
-                      <th className="text-left py-3 px-4 text-white/60 text-sm font-medium">Yıl</th>
-                      <th className="text-left py-3 px-4 text-white/60 text-sm font-medium">Plaka</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {vehicles.map((vehicle) => (
-                      <tr key={vehicle.id} className="border-b border-white/5 hover:bg-white/5">
-                        <td className="py-3 px-4">
-                          {(vehicle as any).profiles?.nickname || '-'}
-                        </td>
-                        <td className="py-3 px-4 text-yellow-400">{vehicle.catalog_id || '-'}</td>
-                        <td className="py-3 px-4 text-white/60">-</td>
-                        <td className="py-3 px-4 text-white/60">{vehicle.year || '-'}</td>
-                        <td className="py-3 px-4 text-white/60 font-mono">{vehicle.plate_number || '-'}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold">Araç Listesi</h2>
+                <span className="text-sm text-white/60">{vehicles.length} araç</span>
               </div>
+              {vehicles.length === 0 ? (
+                <div className="text-center py-12 text-white/40">
+                  <p className="text-lg mb-2">🚗</p>
+                  <p>Henüz araç yok</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-white/10">
+                        <th className="text-left py-3 px-4 text-white/60 text-sm font-medium">Sahibi</th>
+                        <th className="text-left py-3 px-4 text-white/60 text-sm font-medium">Catalog ID</th>
+                        <th className="text-left py-3 px-4 text-white/60 text-sm font-medium">Yıl</th>
+                        <th className="text-left py-3 px-4 text-white/60 text-sm font-medium">Plaka</th>
+                        <th className="text-left py-3 px-4 text-white/60 text-sm font-medium">Durum</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {vehicles.map((vehicle) => (
+                        <tr key={vehicle.id} className="border-b border-white/5 hover:bg-white/5">
+                          <td className="py-3 px-4 font-medium">
+                            {(vehicle as any).profiles?.nickname || '-'}
+                          </td>
+                          <td className="py-3 px-4 text-yellow-400 font-mono text-sm">
+                            {vehicle.catalog_id || '-'}
+                          </td>
+                          <td className="py-3 px-4 text-white/60">{vehicle.year || '-'}</td>
+                          <td className="py-3 px-4 text-white/60 font-mono">{vehicle.plate_number || '-'}</td>
+                          <td className="py-3 px-4">
+                            {vehicle.is_primary ? (
+                              <span className="px-2 py-1 bg-green-500/20 text-green-400 rounded-full text-xs">Birincil</span>
+                            ) : (
+                              <span className="px-2 py-1 bg-white/10 text-white/60 rounded-full text-xs">Yedek</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           )}
 
           {activeTab === 'brands' && (
             <div className="p-6">
-              <h2 className="text-xl font-bold mb-4">Marka Listesi</h2>
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                {brands.map((brand) => (
-                  <div
-                    key={brand.id}
-                    className="p-4 bg-white/5 rounded-xl border border-white/10 hover:border-yellow-400/50 transition-all"
-                  >
-                    <div className="flex items-center gap-3">
-                      <img
-                        src={`/vehicles/brands/${brand.name.toLowerCase().replace(/\s+/g, '-')}.png`}
-                        alt={brand.name}
-                        className="w-10 h-10 object-contain"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = '/vehicles/brands/default.png'
-                        }}
-                      />
-                      <span className="text-sm font-medium truncate">{brand.name}</span>
-                    </div>
-                    <div className="mt-2 flex items-center gap-2">
-                      <span
-                        className={`text-xs px-2 py-1 rounded-full ${brand.type === 'car'
-                          ? 'bg-blue-500/20 text-blue-400'
-                          : 'bg-orange-500/20 text-orange-400'
-                          }`}
-                      >
-                        {brand.type === 'car' ? '🚗 Araba' : '🏍️ Motor'}
-                      </span>
-                    </div>
-                  </div>
-                ))}
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold">Marka Listesi</h2>
+                <span className="text-sm text-white/60">{brands.length} marka</span>
               </div>
+              {brands.length === 0 ? (
+                <div className="text-center py-12 text-white/40">
+                  <p className="text-lg mb-2">🏷️</p>
+                  <p>Henüz marka yok</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                  {brands.map((brand) => (
+                    <div
+                      key={brand.id}
+                      className="p-4 bg-white/5 rounded-xl border border-white/10 hover:border-yellow-400/50 transition-all"
+                    >
+                      <div className="flex items-center gap-3 mb-2">
+                        <img
+                          src={`/vehicles/brands/${brand.name.toLowerCase().replace(/\s+/g, '-')}.png`}
+                          alt={brand.name}
+                          className="w-10 h-10 object-contain"
+                          onError={(e) => {
+                            ;(e.target as HTMLImageElement).style.display = 'none'
+                          }}
+                        />
+                        <span className="text-sm font-medium truncate">{brand.name}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`text-xs px-2 py-1 rounded-full ${
+                            brand.type === 'car'
+                              ? 'bg-blue-500/20 text-blue-400'
+                              : 'bg-orange-500/20 text-orange-400'
+                          }`}
+                        >
+                          {brand.type === 'car' ? '🚗 Araba' : '🏍️ Motor'}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
           {activeTab === 'icons' && (
             <div className="p-6">
-              <h2 className="text-xl font-bold mb-4">Araç İkonları</h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold">Araç İkonları</h2>
+                <span className="text-sm text-white/60">{brands.length} ikon</span>
+              </div>
               <p className="text-white/60 mb-6">
-                Mevcut {brands.length} marka ikonu bulunuyor. İkonları{' '}
-                <code className="px-2 py-1 bg-white/10 rounded">public/vehicles/brands/</code> klasörüne ekleyebilirsiniz.
+                Mevcut marka ikonları. İkonları <code className="px-2 py-1 bg-white/10 rounded">public/vehicles/brands/</code>{' '}
+                klasörüne ekleyebilirsiniz.
               </p>
               <div className="grid grid-cols-4 md:grid-cols-8 lg:grid-cols-12 gap-4">
                 {brands.map((brand) => {
@@ -290,16 +367,19 @@ export default function AdminPage() {
                   return (
                     <div
                       key={brand.id}
-                      className="aspect-square p-4 bg-white/5 rounded-xl border border-white/10 hover:border-yellow-400/50 transition-all flex items-center justify-center"
+                      className="aspect-square p-4 bg-white/5 rounded-xl border border-white/10 hover:border-yellow-400/50 transition-all flex items-center justify-center group"
                     >
                       <img
                         src={iconPath}
                         alt={brand.name}
-                        className="max-w-full max-h-full object-contain"
+                        className="max-w-full max-h-full object-contain group-hover:scale-110 transition-transform"
                         onError={(e) => {
-                          (e.target as HTMLImageElement).src = '/vehicles/brands/default.png'
+                          ;(e.target as HTMLImageElement).src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiByeD0iNCIgZmlsbD0iIzMzMyIvPjwvc3ZnPg=='
                         }}
                       />
+                      <span className="absolute bottom-1 right-1 text-[10px] text-white/40 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {brand.name}
+                      </span>
                     </div>
                   )
                 })}
@@ -310,31 +390,31 @@ export default function AdminPage() {
 
         {/* Quick Actions */}
         <div className="mt-8 p-6 bg-gradient-to-r from-yellow-400/10 to-orange-500/10 rounded-2xl border border-yellow-400/20">
-          <h3 className="text-lg font-bold mb-4">Hızlı İşlemler</h3>
+          <h3 className="text-lg font-bold mb-4">⚡ Hızlı İşlemler</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <button
-              onClick={() => router.push('/admin/users')}
-              className="p-4 bg-white/5 hover:bg-white/10 rounded-xl transition-all text-sm"
+              onClick={loadData}
+              className="p-4 bg-white/5 hover:bg-white/10 rounded-xl transition-all text-sm flex items-center justify-center gap-2"
             >
-              👥 Kullanıcı Yönetimi
+              🔄 Verileri Yenile
             </button>
             <button
-              onClick={() => router.push('/admin/vehicles')}
+              onClick={() => router.push('/garage')}
               className="p-4 bg-white/5 hover:bg-white/10 rounded-xl transition-all text-sm"
             >
-              🚗 Araç Onayı
+              🚗 Araç Ekle
             </button>
             <button
-              onClick={() => router.push('/admin/reports')}
+              onClick={() => window.open('https://supabase.com/dashboard', '_blank')}
               className="p-4 bg-white/5 hover:bg-white/10 rounded-xl transition-all text-sm"
             >
-              🚩 Şikayetler
+              🗄️ Supabase
             </button>
             <button
-              onClick={() => router.push('/admin/settings')}
+              onClick={() => window.open('https://vercel.com/dashboard', '_blank')}
               className="p-4 bg-white/5 hover:bg-white/10 rounded-xl transition-all text-sm"
             >
-              ⚙️ Ayarlar
+              🚀 Vercel
             </button>
           </div>
         </div>
