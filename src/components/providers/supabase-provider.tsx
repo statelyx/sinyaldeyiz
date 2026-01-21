@@ -123,9 +123,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setAuthState('unauthenticated')
     } else if (profile?.is_guest) {
       setAuthState('guest')
-    } else if (profile?.onboarding_completed) {
+    } else if (profile && profile.onboarding_completed === true) {
       setAuthState('authenticated_onboarded')
     } else {
+      // No profile exists or onboarding not completed
       setAuthState('authenticated_not_onboarded')
     }
   }

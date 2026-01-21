@@ -14,7 +14,6 @@ export async function GET(request: NextRequest) {
   if (code) {
     const cookieStore = await cookies()
 
-    // Cookie-aware Supabase client
     const supabase = createServerClient<Database>(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -23,17 +22,16 @@ export async function GET(request: NextRequest) {
           get(name: string) {
             return cookieStore.get(name)?.value
           },
-          set(name: string, value: string, options: any) {
-            cookieStore.set({ name, value, ...options })
+          set: (name: string, value: string) => {
+            cookieStore.set({ name, value })
           },
-          remove(name: string, options: any) {
-            cookieStore.set({ name, value: '', ...options })
+          remove: (name: string) => {
+            cookieStore.delete(name)
           },
         },
       }
     )
 
-    // Exchange code for session
     const { data, error } = await supabase.auth.exchangeCodeForSession(code)
 
     if (error) {
@@ -42,20 +40,25 @@ export async function GET(request: NextRequest) {
     }
 
     if (data.user) {
-      // Check if user has completed onboarding
+      console.log('Auth successful for user:', data.user.id)
+
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('nickname, onboarding_completed')
         .eq('id', data.user.id)
         .single()
 
-      // If no profile exists, create one
+      console.log('Profile query result:', { profile, profileError })
+
       if (profileError || !profile) {
+        console.log('Creating new profile for user:', data.user.id)
+
         const provider = data.user.app_metadata?.provider || 'email'
 
         const newProfile = {
           id: data.user.id,
           email: data.user.email || null,
+          nickname: null,
           provider: provider as 'google' | 'email' | 'guest',
           is_guest: false,
           onboarding_completed: false,
@@ -63,21 +66,31 @@ export async function GET(request: NextRequest) {
           updated_at: new Date().toISOString(),
         }
 
-        await (supabase.from('profiles') as any).upsert(newProfile)
+        const { error: insertError } = await (supabase.from('profiles') as any)
+          .upsert(newProfile)
 
-        // New user - go to onboarding
+        if (insertError) {
+          console.error('Profile creation error:', insertError)
+        } else {
+          console.log('Profile created successfully')
+        }
+
+        console.log('Redirecting new user to onboarding')
         return NextResponse.redirect(`${origin}/onboarding`)
       }
 
-      // Check onboarding status
-      if ((profile as any)?.onboarding_completed || (profile as any)?.nickname) {
+      console.log('Profile found:', profile)
+
+      if ((profile as any)?.onboarding_completed === true || (profile as any)?.nickname) {
+        console.log('Redirecting onboarded user to dashboard')
         return NextResponse.redirect(`${origin}/dashboard`)
       } else {
+        console.log('Redirecting existing user to onboarding')
         return NextResponse.redirect(`${origin}/onboarding`)
       }
     }
   }
 
-  // Fallback - redirect to home
+  console.log('Fallback: redirecting to home')
   return NextResponse.redirect(`${origin}/`)
 }
