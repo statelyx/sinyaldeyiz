@@ -34,16 +34,29 @@ export default function HomePage() {
   const { user, loading, authState, isOnboarded } = useAuth()
   const router = useRouter()
 
-  // Redirect authenticated users ONLY when loading is complete
-  // Don't redirect immediately - let user see the landing page first
+  // Redirect authenticated users - check profile onboarding status
   useEffect(() => {
-    // Only redirect if explicitly authenticated AND loading is done
-    if (!loading && authState === 'authenticated_onboarded') {
-      router.push('/dashboard')
-    } else if (!loading && authState === 'authenticated_not_onboarded') {
-      router.push('/onboarding')
+    // Don't redirect if still loading or no user
+    if (loading || !user) return
+
+    // Check if user has completed onboarding via profile
+    const checkOnboardingAndRedirect = async () => {
+      const supabase = await import('@/lib/supabase/client').then(m => m.createSupabase())
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('onboarding_completed')
+        .eq('id', user.id)
+        .single() as any
+
+      if (profile?.onboarding_completed) {
+        router.push('/dashboard')
+      } else {
+        router.push('/onboarding')
+      }
     }
-  }, [authState, loading, router])
+
+    checkOnboardingAndRedirect()
+  }, [user, loading, router])
 
   const openLogin = () => {
     setAuthMode('login')
