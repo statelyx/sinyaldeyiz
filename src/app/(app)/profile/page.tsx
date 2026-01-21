@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/components/providers/supabase-provider'
 import { createSupabase } from '@/lib/supabase/client'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
 // Vehicle brands that can be used as avatars - all using PNG icons
 const VEHICLE_AVATARS = [
@@ -72,6 +73,30 @@ export default function ProfilePage() {
     }, [])
 
     const canChangeNickname = nicknameChangedCount === 0
+
+    // Auto-save avatar when changed
+    const handleAvatarChange = async (newAvatar: string) => {
+        if (!user) return
+        setAvatar(newAvatar)
+        setError('')
+        setSuccess('')
+
+        try {
+            const supabase = createSupabase()
+            const { error: updateError } = await (supabase
+                .from('profiles') as any)
+                .update({ avatar_url: newAvatar, updated_at: new Date().toISOString() })
+                .eq('id', user.id)
+
+            if (updateError) throw updateError
+
+            await refreshProfile()
+            setSuccess('Avatar güncellendi!')
+            setTimeout(() => setSuccess(''), 2000)
+        } catch (err: any) {
+            setError(err.message || 'Avatar güncellenemedi')
+        }
+    }
 
     const handleSave = async () => {
         if (!user) return
@@ -371,7 +396,7 @@ export default function ProfilePage() {
                                         <button
                                             key={vehicle.brand}
                                             onClick={() => {
-                                                setAvatar(vehicle.path)
+                                                handleAvatarChange(vehicle.path)
                                                 setShowAvatarPicker(false)
                                             }}
                                             className={`group relative aspect-square rounded-xl p-2 transition-all ${
