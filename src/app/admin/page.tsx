@@ -3,24 +3,14 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { getUser } from '@/lib/supabase/server'
+import { useAuth } from '@/components/providers/supabase-provider'
 
 // Simple admin check (in production, use proper RBAC)
-async function isAdmin(): Promise<boolean> {
-  try {
-    const user = await getUser()
-    if (!user) return false
-
-    // Check if user email is in admin list
-    const adminEmails = ['furkan.avcilar@example.com', 'admin@sinyaldeyiz.com'] // Replace with actual admin emails
-    return adminEmails.includes(user.email || '')
-  } catch {
-    return false
-  }
-}
+const ADMIN_EMAILS = ['statelyxx@gmail.com', 'admin@sinyaldeyiz.com'] // Replace with actual admin emails
 
 export default function AdminPage() {
   const router = useRouter()
+  const { user, loading: authLoading } = useAuth()
   const [isAuthorized, setIsAuthorized] = useState(false)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'users' | 'vehicles' | 'brands' | 'icons'>('users')
@@ -38,14 +28,22 @@ export default function AdminPage() {
 
   useEffect(() => {
     checkAuth()
-  }, [])
+  }, [user])
 
   const checkAuth = async () => {
-    const authorized = await isAdmin()
-    if (!authorized) {
+    if (authLoading) return
+
+    if (!user || !user.email) {
       router.push('/')
       return
     }
+
+    // Check if user email is in admin list
+    if (!ADMIN_EMAILS.includes(user.email)) {
+      router.push('/')
+      return
+    }
+
     setIsAuthorized(true)
     loadData()
     setLoading(false)
@@ -96,7 +94,7 @@ export default function AdminPage() {
     if (brandsData) setBrands(brandsData)
   }
 
-  if (loading) {
+  if (loading || authLoading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="w-12 h-12 border-4 border-yellow-400 border-t-transparent rounded-full animate-spin" />
@@ -161,11 +159,10 @@ export default function AdminPage() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
-              className={`px-6 py-3 rounded-xl font-medium transition-all whitespace-nowrap flex items-center gap-2 ${
-                activeTab === tab.id
-                  ? 'bg-gradient-to-r from-yellow-400 to-orange-500 text-black'
-                  : 'bg-white/5 text-white/70 hover:bg-white/10'
-              }`}
+              className={`px-6 py-3 rounded-xl font-medium transition-all whitespace-nowrap flex items-center gap-2 ${activeTab === tab.id
+                ? 'bg-gradient-to-r from-yellow-400 to-orange-500 text-black'
+                : 'bg-white/5 text-white/70 hover:bg-white/10'
+                }`}
             >
               <span>{tab.icon}</span>
               <span>{tab.label}</span>
@@ -266,11 +263,10 @@ export default function AdminPage() {
                     </div>
                     <div className="mt-2 flex items-center gap-2">
                       <span
-                        className={`text-xs px-2 py-1 rounded-full ${
-                          brand.type === 'car'
-                            ? 'bg-blue-500/20 text-blue-400'
-                            : 'bg-orange-500/20 text-orange-400'
-                        }`}
+                        className={`text-xs px-2 py-1 rounded-full ${brand.type === 'car'
+                          ? 'bg-blue-500/20 text-blue-400'
+                          : 'bg-orange-500/20 text-orange-400'
+                          }`}
                       >
                         {brand.type === 'car' ? '🚗 Araba' : '🏍️ Motor'}
                       </span>
