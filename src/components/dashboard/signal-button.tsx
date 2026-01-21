@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { createClient } from '@/lib/supabase/client'
 import {
     startSignal,
     stopSignal,
@@ -8,6 +9,7 @@ import {
     requestGeolocation,
     updateLocation
 } from '@/lib/services/location-service'
+import { setStatus, clearStatus } from '@/lib/services/status-service'
 
 interface SignalButtonProps {
     onSignalChange: (active: boolean, location?: { lat: number; lon: number }) => void
@@ -30,6 +32,8 @@ export function SignalButton({ onSignalChange, isMobile = false }: SignalButtonP
     const [timeRemaining, setTimeRemaining] = useState<string>('')
     const [showConfirm, setShowConfirm] = useState(false)
     const [selectedDuration, setSelectedDuration] = useState<DurationOption>(60)
+    const [statusMessage, setStatusMessage] = useState('')
+    const [showStatusInput, setShowStatusInput] = useState(false)
 
     // Check initial status
     useEffect(() => {
@@ -104,14 +108,15 @@ export function SignalButton({ onSignalChange, isMobile = false }: SignalButtonP
             // Request geolocation
             const location = await requestGeolocation()
 
-            // Start signal with selected duration
-            const result = await startSignal(location, selectedDuration)
+            // Start signal with selected duration and status message
+            const result = await startSignal(location, selectedDuration, statusMessage.trim() || undefined)
 
             if (result.success) {
                 setIsActive(true)
                 const expires = new Date(Date.now() + selectedDuration * 60 * 1000)
                 setExpiresAt(expires)
                 onSignalChange(true, { lat: location.lat, lon: location.lon })
+                setStatusMessage('') // Clear status message input
             } else {
                 setError(result.error || 'Sinyal başlatılamadı')
             }
@@ -185,6 +190,32 @@ export function SignalButton({ onSignalChange, isMobile = false }: SignalButtonP
                                     </button>
                                 ))}
                             </div>
+
+                            {/* Status Message Toggle */}
+                            <button
+                                onClick={() => setShowStatusInput(!showStatusInput)}
+                                className="w-full mb-4 p-3 bg-white/5 hover:bg-white/10 text-white/70 rounded-lg text-sm transition-colors flex items-center justify-center gap-2"
+                            >
+                                <span>💬</span>
+                                <span>{showStatusInput ? 'Durum mesajını gizle' : 'Durum mesajı ekle'}</span>
+                            </button>
+
+                            {/* Status Message Input */}
+                            {showStatusInput && (
+                                <div className="mb-4">
+                                    <textarea
+                                        placeholder="Ne yapıyorsun? (örn: Kadıköy'e doğru gidiyorum)"
+                                        maxLength={100}
+                                        value={statusMessage}
+                                        onChange={(e) => setStatusMessage(e.target.value)}
+                                        className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-white/40 resize-none focus:outline-none focus:border-yellow-400/50 transition-colors"
+                                        rows={2}
+                                    />
+                                    <div className="text-right text-xs text-white/40 mt-1">
+                                        {statusMessage.length}/100
+                                    </div>
+                                </div>
+                            )}
 
                             {error && (
                                 <div className="mb-4 p-3 bg-red-500/20 border border-red-500 rounded-lg text-red-400 text-sm">
@@ -326,6 +357,32 @@ export function SignalButton({ onSignalChange, isMobile = false }: SignalButtonP
                                 ))}
                             </div>
                         </div>
+
+                        {/* Status Message Toggle */}
+                        <button
+                            onClick={() => setShowStatusInput(!showStatusInput)}
+                            className="w-full mb-6 p-3 bg-white/5 hover:bg-white/10 text-white/70 rounded-lg text-sm transition-colors flex items-center justify-center gap-2"
+                        >
+                            <span>💬</span>
+                            <span>{showStatusInput ? 'Durum mesajını gizle' : 'Durum mesajı ekle'}</span>
+                        </button>
+
+                        {/* Status Message Input */}
+                        {showStatusInput && (
+                            <div className="mb-6">
+                                <textarea
+                                    placeholder="Ne yapıyorsun? (örn: Kadıköy'e doğru gidiyorum)"
+                                    maxLength={100}
+                                    value={statusMessage}
+                                    onChange={(e) => setStatusMessage(e.target.value)}
+                                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-white/40 resize-none focus:outline-none focus:border-yellow-400/50 transition-colors"
+                                    rows={2}
+                                />
+                                <div className="text-right text-xs text-white/40 mt-1">
+                                    {statusMessage.length}/100
+                                </div>
+                            </div>
+                        )}
 
                         {error && (
                             <div className="mb-4 p-3 bg-red-500/20 border border-red-500 rounded-lg text-red-400 text-sm">

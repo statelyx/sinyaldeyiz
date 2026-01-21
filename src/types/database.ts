@@ -137,6 +137,8 @@ export interface Database {
           geohash: string | null
           accuracy_meters: number | null
           last_location_update: string
+          status_message: string | null
+          status_expires_at: string | null
           created_at: string
           updated_at: string
         }
@@ -150,6 +152,8 @@ export interface Database {
           geohash?: string | null
           accuracy_meters?: number | null
           last_location_update?: string
+          status_message?: string | null
+          status_expires_at?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -163,6 +167,8 @@ export interface Database {
           geohash?: string | null
           accuracy_meters?: number | null
           last_location_update?: string
+          status_message?: string | null
+          status_expires_at?: string | null
           created_at?: string
           updated_at?: string
         }

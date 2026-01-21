@@ -8,6 +8,8 @@ export interface VisibleUser {
     vehicle_brand?: string
     vehicle_model?: string
     expires_at: string
+    status_message?: string | null
+    status_expires_at?: string | null
 }
 
 export interface LocationData {
@@ -24,10 +26,12 @@ let mockSignalExpiry: Date | null = null
  * Start signal - makes user visible on the map
  * @param location - User's location data
  * @param durationMinutes - Duration in minutes (10, 30, or 60)
+ * @param statusMessage - Optional status message (max 100 chars)
  */
 export async function startSignal(
     location: LocationData,
-    durationMinutes: number = 60
+    durationMinutes: number = 60,
+    statusMessage?: string
 ): Promise<{ success: boolean; error?: string }> {
     try {
         // Validate duration
@@ -54,6 +58,11 @@ export async function startSignal(
         const expiresAt = new Date(now.getTime() + durationMinutes * 60 * 1000)
         const geohash = generateSimpleGeohash(location.lat, location.lon)
 
+        // Calculate status expiry (1 hour from now if message provided)
+        const statusExpiresAt = statusMessage
+            ? new Date(now.getTime() + 60 * 60 * 1000).toISOString()
+            : null
+
         const insertData = {
             user_id: user.id,
             is_visible: true,
@@ -65,6 +74,8 @@ export async function startSignal(
             accuracy_meters: location.accuracy_meters || null,
             last_location_update: now.toISOString(),
             updated_at: now.toISOString(),
+            status_message: statusMessage || null,
+            status_expires_at: statusExpiresAt,
         }
 
         const { error } = await (supabase
@@ -206,6 +217,8 @@ export async function getVisibleUsers(): Promise<VisibleUser[]> {
         lat,
         lon,
         expires_at,
+        status_message,
+        status_expires_at,
         profiles!inner(nickname),
         vehicles(
           catalog_id,
@@ -236,6 +249,8 @@ export async function getVisibleUsers(): Promise<VisibleUser[]> {
                 vehicle_brand: primaryVehicle?.vehicle_catalog?.marka,
                 vehicle_model: primaryVehicle?.vehicle_catalog?.model,
                 expires_at: item.expires_at,
+                status_message: item.status_message,
+                status_expires_at: item.status_expires_at,
             }
         })
     } catch (error) {

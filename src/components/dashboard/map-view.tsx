@@ -4,6 +4,8 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import type { VisibleUser } from '@/lib/services/location-service'
+import { VehicleIcon } from './vehicle-icon'
+import { ChatBubble } from './chat-bubble'
 
 interface MapViewProps {
     userLocation: { lat: number; lon: number } | null
@@ -11,14 +13,66 @@ interface MapViewProps {
     isSignalActive: boolean
 }
 
-// Escape HTML to prevent XSS
-function escapeHtml(unsafe: string): string {
-    return unsafe
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;")
+type MapStyle = 'dark' | '3d'
+
+// Map style configurations
+const MAP_STYLES = {
+    dark: {
+        style: {
+            version: 8,
+            sources: {
+                'carto-dark': {
+                    type: 'raster',
+                    tiles: [
+                        'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png',
+                        'https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png',
+                        'https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png',
+                    ],
+                    tileSize: 256,
+                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+                },
+            },
+            layers: [
+                {
+                    id: 'dark-tiles',
+                    type: 'raster',
+                    source: 'carto-dark',
+                    minzoom: 0,
+                    maxzoom: 19,
+                },
+            ],
+        },
+        pitch: 0,
+        bearing: 0,
+    },
+    '3d': {
+        style: {
+            version: 8,
+            sources: {
+                'carto-dark': {
+                    type: 'raster',
+                    tiles: [
+                        'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png',
+                        'https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png',
+                        'https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png',
+                    ],
+                    tileSize: 256,
+                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+                },
+            },
+            layers: [
+                {
+                    id: 'dark-tiles',
+                    type: 'raster',
+                    source: 'carto-dark',
+                    minzoom: 0,
+                    maxzoom: 19,
+                },
+            ],
+        },
+        pitch: 60,
+        bearing: -17.6,
+    },
 }
 
 export default function MapView({ userLocation, visibleUsers, isSignalActive }: MapViewProps) {
@@ -27,6 +81,7 @@ export default function MapView({ userLocation, visibleUsers, isSignalActive }: 
     const markers = useRef<maplibregl.Marker[]>([])
     const userMarker = useRef<maplibregl.Marker | null>(null)
     const [mapLoaded, setMapLoaded] = useState(false)
+    const [mapStyle, setMapStyle] = useState<MapStyle>('dark')
 
     // Initialize map
     useEffect(() => {
@@ -37,34 +92,15 @@ export default function MapView({ userLocation, visibleUsers, isSignalActive }: 
             ? [userLocation.lon, userLocation.lat]
             : [28.9784, 41.0082]
 
+        const currentStyle = MAP_STYLES[mapStyle]
+
         map.current = new maplibregl.Map({
             container: mapContainer.current,
-            style: {
-                version: 8,
-                sources: {
-                    osm: {
-                        type: 'raster',
-                        tiles: [
-                            'https://a.tile.openstreetmap.org/{z}/{x}/{y}.png',
-                            'https://b.tile.openstreetmap.org/{z}/{x}/{y}.png',
-                            'https://c.tile.openstreetmap.org/{z}/{x}/{y}.png',
-                        ],
-                        tileSize: 256,
-                        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-                    },
-                },
-                layers: [
-                    {
-                        id: 'osm-tiles',
-                        type: 'raster',
-                        source: 'osm',
-                        minzoom: 0,
-                        maxzoom: 19,
-                    },
-                ],
-            },
+            style: currentStyle.style as any,
             center,
             zoom: 12,
+            pitch: currentStyle.pitch,
+            bearing: currentStyle.bearing,
             attributionControl: false,
         })
 
@@ -92,6 +128,16 @@ export default function MapView({ userLocation, visibleUsers, isSignalActive }: 
         }
     }, [])
 
+    // Update map style
+    useEffect(() => {
+        if (!map.current || !mapLoaded) return
+
+        const currentStyle = MAP_STYLES[mapStyle]
+        map.current.setStyle(currentStyle.style as any)
+        map.current.setPitch(currentStyle.pitch)
+        map.current.setBearing(currentStyle.bearing)
+    }, [mapStyle, mapLoaded])
+
     // Update center when user location changes
     useEffect(() => {
         if (!map.current || !userLocation || !mapLoaded) return
@@ -99,9 +145,11 @@ export default function MapView({ userLocation, visibleUsers, isSignalActive }: 
         map.current.flyTo({
             center: [userLocation.lon, userLocation.lat],
             zoom: 13,
+            pitch: MAP_STYLES[mapStyle].pitch,
+            bearing: MAP_STYLES[mapStyle].bearing,
             duration: 1500,
         })
-    }, [userLocation, mapLoaded])
+    }, [userLocation, mapLoaded, mapStyle])
 
     // Create marker element
     const createMarkerElement = useCallback((user: VisibleUser, isCurrentUser: boolean) => {
@@ -111,29 +159,28 @@ export default function MapView({ userLocation, visibleUsers, isSignalActive }: 
         if (isCurrentUser) {
             el.innerHTML = `
         <div class="relative">
-          <div class="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500 flex items-center justify-center text-white text-lg shadow-lg border-2 border-white">
-            📍
+          <div class="w-12 h-12 rounded-full bg-gradient-to-r from-yellow-400 to-amber-500 flex items-center justify-center shadow-lg shadow-yellow-400/30 border-2 border-white">
+            <svg class="w-6 h-6 text-black" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
+            </svg>
           </div>
-          <div class="absolute -bottom-1 left-1/2 transform -translate-x-1/2 bg-blue-500 text-white text-[10px] px-2 py-0.5 rounded-full whitespace-nowrap font-medium">
+          <div class="absolute -bottom-1 left-1/2 transform -translate-x-1/2 bg-yellow-400 text-black text-[10px] px-2 py-0.5 rounded-full whitespace-nowrap font-bold">
             Sen
           </div>
-          <div class="absolute inset-0 w-10 h-10 rounded-full bg-blue-500 animate-ping opacity-25"></div>
+          <div class="absolute inset-0 w-12 h-12 rounded-full bg-yellow-400 animate-ping opacity-30"></div>
         </div>
       `
         } else {
-            // Vehicle emoji based on brand
-            const vehicleEmoji = getVehicleEmoji(user.vehicle_brand)
-            // Escape nickname to prevent XSS
             const safeNickname = escapeHtml(user.nickname || 'Sürücü')
             const safeBrand = user.vehicle_brand ? escapeHtml(user.vehicle_brand) : ''
             const safeModel = user.vehicle_model ? escapeHtml(user.vehicle_model) : ''
 
             el.innerHTML = `
         <div class="relative cursor-pointer group">
-          <div class="w-10 h-10 rounded-full bg-gradient-to-r from-orange-500 to-red-500 flex items-center justify-center text-lg shadow-lg border-2 border-white transition-transform group-hover:scale-110">
-            ${vehicleEmoji}
+          <div class="w-12 h-12 rounded-full bg-gradient-to-br from-yellow-400/20 to-amber-500/20 backdrop-blur-sm border-2 border-yellow-400/50 flex items-center justify-center shadow-lg shadow-yellow-400/20 transition-transform group-hover:scale-110 overflow-hidden">
+            <img src="/vehicles/brands/${getBrandSlug(user.vehicle_brand)}.png" alt="${safeBrand}" class="w-8 h-8 object-contain" onerror="this.src='/vehicles/brands/default.png'" />
           </div>
-          <div class="absolute -bottom-1 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white text-[10px] px-2 py-0.5 rounded-full whitespace-nowrap font-medium max-w-[80px] truncate">
+          <div class="absolute -bottom-1 left-1/2 transform -translate-x-1/2 bg-black/90 backdrop-blur-sm text-yellow-400 text-[10px] px-2 py-0.5 rounded-full whitespace-nowrap font-bold border border-yellow-400/30">
             ${safeNickname}
           </div>
         </div>
@@ -166,28 +213,33 @@ export default function MapView({ userLocation, visibleUsers, isSignalActive }: 
             const safeBrand = (el as any).dataset.safeBrand || ''
             const safeModel = (el as any).dataset.safeModel || ''
             const safeNickname = (el as any).dataset.safeNickname || 'Sürücü'
-            const vehicleEmoji = getVehicleEmoji(user.vehicle_brand)
 
             const popup = new maplibregl.Popup({
-                offset: 25,
+                offset: 30,
                 closeButton: false,
                 className: 'custom-popup',
             }).setHTML(`
-        <div class="p-3 min-w-[150px]">
-          <div class="flex items-center gap-2 mb-2">
-            <div class="w-8 h-8 rounded-full bg-gradient-to-r from-orange-500 to-red-500 flex items-center justify-center text-sm">
-              ${vehicleEmoji}
+        <div class="p-4 min-w-[180px] bg-gradient-to-br from-yellow-400/10 to-amber-500/10 backdrop-blur-xl border border-yellow-400/30 rounded-2xl">
+          <div class="flex items-center gap-3 mb-3">
+            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-yellow-400 to-amber-500 flex items-center justify-center overflow-hidden">
+              <img src="/vehicles/brands/${getBrandSlug(user.vehicle_brand)}.png" alt="${safeBrand}" class="w-6 h-6 object-contain" onerror="this.src='/vehicles/brands/default.png'" />
             </div>
             <div>
-              <p class="font-bold text-slate-800">${safeNickname}</p>
+              <p class="font-bold text-white text-sm">${safeNickname}</p>
             </div>
           </div>
           ${safeBrand && safeModel ? `
-            <div class="text-sm text-slate-600">
-              <span class="font-medium">${safeBrand}</span> ${safeModel}
+            <div class="text-sm text-yellow-400 font-medium">
+              ${safeBrand} ${safeModel}
             </div>
           ` : ''}
-          <div class="text-xs text-slate-400 mt-2">
+          ${user.status_message ? `
+            <div class="mt-2 p-2 bg-black/50 rounded-lg">
+              <p class="text-xs text-white">💬 ${escapeHtml(user.status_message)}</p>
+            </div>
+          ` : ''}
+          <div class="text-[10px] text-yellow-400/60 mt-2 flex items-center gap-1">
+            <span class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
             Aktif sinyal
           </div>
         </div>
@@ -220,7 +272,7 @@ export default function MapView({ userLocation, visibleUsers, isSignalActive }: 
                 lat: userLocation.lat,
                 lon: userLocation.lon,
                 nickname: 'Sen',
-                expires_at: ''
+                expires_at: '',
             }, true)
 
             userMarker.current = new maplibregl.Marker({ element: el })
@@ -240,12 +292,38 @@ export default function MapView({ userLocation, visibleUsers, isSignalActive }: 
         <div className="relative w-full h-full">
             <div ref={mapContainer} className="w-full h-full" />
 
+            {/* Map Style Switcher */}
+            <div className="absolute top-4 right-4 z-10">
+                <div className="bg-black/90 backdrop-blur-xl rounded-xl p-1 border border-yellow-400/30 shadow-lg">
+                    <button
+                        onClick={() => setMapStyle('dark')}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                            mapStyle === 'dark'
+                                ? 'bg-gradient-to-r from-yellow-400 to-amber-500 text-black'
+                                : 'text-white/70 hover:text-white hover:bg-white/10'
+                        }`}
+                    >
+                        2D
+                    </button>
+                    <button
+                        onClick={() => setMapStyle('3d')}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                            mapStyle === '3d'
+                                ? 'bg-gradient-to-r from-yellow-400 to-amber-500 text-black'
+                                : 'text-white/70 hover:text-white hover:bg-white/10'
+                        }`}
+                    >
+                        3D
+                    </button>
+                </div>
+            </div>
+
             {/* Map overlay for loading */}
             {!mapLoaded && (
-                <div className="absolute inset-0 bg-slate-800/80 flex items-center justify-center">
+                <div className="absolute inset-0 bg-black/80 flex items-center justify-center">
                     <div className="flex flex-col items-center gap-3">
-                        <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
-                        <p className="text-slate-300">Harita yükleniyor...</p>
+                        <div className="w-12 h-12 border-4 border-yellow-400 border-t-transparent rounded-full animate-spin" />
+                        <p className="text-yellow-400 font-medium">Harita yükleniyor...</p>
                     </div>
                 </div>
             )}
@@ -253,14 +331,13 @@ export default function MapView({ userLocation, visibleUsers, isSignalActive }: 
             {/* Custom styles for popup */}
             <style jsx global>{`
         .maplibregl-popup-content {
-          border-radius: 12px;
+          border-radius: 16px;
           padding: 0;
-          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-          border: 1px solid #e2e8f0;
+          background: transparent !important;
         }
 
-        .maplibregl-popup-anchor-bottom .maplibregl-popup-tip {
-          border-top-color: white;
+        .maplibregl-popup-tip {
+          display: none;
         }
 
         .marker-container {
@@ -268,10 +345,11 @@ export default function MapView({ userLocation, visibleUsers, isSignalActive }: 
         }
 
         .maplibregl-ctrl-group {
-          background: rgba(30, 41, 59, 0.9) !important;
-          border: 1px solid rgba(71, 85, 105, 0.5) !important;
-          border-radius: 8px !important;
-          backdrop-filter: blur(8px);
+          background: rgba(0, 0, 0, 0.9) !important;
+          border: 1px solid rgba(250, 204, 21, 0.3) !important;
+          border-radius: 12px !important;
+          backdrop-filter: blur(12px);
+          box-shadow: 0 4px 20px rgba(250, 204, 21, 0.2);
         }
 
         .maplibregl-ctrl-group button {
@@ -280,50 +358,132 @@ export default function MapView({ userLocation, visibleUsers, isSignalActive }: 
         }
 
         .maplibregl-ctrl-group button:hover {
-          background-color: rgba(51, 65, 85, 0.8) !important;
+          background-color: rgba(250, 204, 21, 0.1) !important;
         }
 
         .maplibregl-ctrl-group button span {
-          filter: invert(0.9);
+          filter: invert(1) sepia(1) saturate(5) hue-rotate(5deg);
         }
 
-        .maplibregl-ctrl-attrib {
-          background: rgba(30, 41, 59, 0.8) !important;
-          color: #94a3b8 !important;
-          font-size: 10px;
-          padding: 2px 6px;
-          border-radius: 4px;
+        @keyframes fade-in {
+          from {
+            opacity: 0;
+            transform: translateX(-50%) translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+          }
         }
 
-        .maplibregl-ctrl-attrib a {
-          color: #60a5fa !important;
+        .animate-fade-in {
+          animation: fade-in 0.3s ease-out forwards;
         }
       `}</style>
         </div>
     )
 }
 
-// Helper function to get vehicle emoji based on brand
-function getVehicleEmoji(brand?: string): string {
-    if (!brand) return '🚗'
+// Helper function to escape HTML
+function escapeHtml(unsafe: string): string {
+    return unsafe
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;")
+}
 
-    const brandLower = brand.toLowerCase()
+// Helper function to get brand slug from brand name
+function getBrandSlug(brand?: string): string {
+    if (!brand) return 'default'
 
-    // Luxury brands
-    if (['mercedes', 'bmw', 'audi', 'porsche', 'ferrari', 'lamborghini', 'maserati'].some(b => brandLower.includes(b))) {
-        return '🏎️'
+    const brandMap: Record<string, string> = {
+        'mercedes': 'mercedes-benz',
+        'mercedes-benz': 'mercedes-benz',
+        'bmw': 'bmw',
+        'audi': 'audi',
+        'audi-sport': 'audi-sport',
+        'porsche': 'porsche',
+        'ferrari': 'ferrari',
+        'lamborghini': 'lamborghini',
+        'maserati': 'maserati',
+        'toyota': 'toyota',
+        'honda': 'honda',
+        'nissan': 'nissan',
+        'nissan-gt-r': 'nissan-gt-r',
+        'mazda': 'mazda',
+        'subaru': 'subaru',
+        'mitsubishi': 'mitsubishi',
+        'ford': 'ford',
+        'ford-mustang': 'ford-mustang',
+        'chevrolet': 'chevrolet',
+        'chevrolet-corvette': 'chevrolet-corvette',
+        'dodge': 'dodge',
+        'dodge-viper': 'dodge-viper',
+        'jeep': 'jeep',
+        'tesla': 'tesla',
+        'volkswagen': 'volkswagen',
+        'volvo': 'volvo',
+        'kia': 'kia',
+        'hyundai': 'hyundai',
+        'lexus': 'lexus',
+        'infiniti': 'infiniti',
+        'acura': 'acura',
+        'alfa-romeo': 'alfa-romeo',
+        'aston-martin': 'aston-martin',
+        'bentley': 'bentley',
+        'bugatti': 'bugatti',
+        'cadillac': 'cadillac',
+        'chery': 'chery',
+        'chrysler': 'chrysler',
+        'citroen': 'citroen',
+        'cupra': 'cupra',
+        'dacia': 'dacia',
+        'daewoo': 'daewoo',
+        'daf': 'daf',
+        'daihatsu': 'daihatsu',
+        'ds': 'ds',
+        'fiat': 'fiat',
+        'gmc': 'gmc',
+        'hummer': 'hummer',
+        'hupmobile': 'hupmobile',
+        'isuzu': 'isuzu',
+        'iveco': 'iveco',
+        'jaguar': 'jaguar',
+        'jawa': 'jawa',
+        'ktm': 'ktm',
+        'lada': 'lada',
+        'lagonda': 'lagonda',
+        'lancia': 'lancia',
+        'land-rover': 'land-rover',
+        'lincoln': 'lincoln',
+        'lotus': 'lotus',
+        'lynk-and-co': 'lynk-and-co',
+        'man': 'man',
+        'maybach': 'maybach',
+        'mclaren': 'mclaren',
+        'mercedes-amg': 'mercedes-amg',
+        'mg': 'mg',
+        'mini': 'mini',
+        'opel': 'opel',
+        'pagani': 'pagani',
+        'peugeot': 'peugeot',
+        'pontiac': 'pontiac',
+        'proton': 'proton',
+        'renault': 'renault',
+        'rolls-royce': 'rolls-royce',
+        'rover': 'rover',
+        'saab': 'saab',
+        'scania': 'scania',
+        'seat': 'seat',
+        'skoda': 'skoda',
+        'smart': 'smart',
+        'ssangyong': 'ssangyong',
+        'suzuki': 'suzuki',
+        'tata': 'tata',
     }
 
-    // Japanese brands
-    if (['toyota', 'honda', 'nissan', 'mazda', 'subaru', 'mitsubishi', 'lexus'].some(b => brandLower.includes(b))) {
-        return '🚙'
-    }
-
-    // American brands
-    if (['ford', 'chevrolet', 'dodge', 'jeep', 'tesla'].some(b => brandLower.includes(b))) {
-        return '🚐'
-    }
-
-    // Default
-    return '🚗'
+    const brandLower = brand.toLowerCase().trim()
+    return brandMap[brandLower] || brandLower.replace(/\s+/g, '-')
 }
