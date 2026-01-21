@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
+import { createSupabase } from '@/lib/supabase/client'
 import { useAuth } from '@/components/providers/supabase-provider'
 
 // Simple admin check (in production, use proper RBAC)
@@ -50,7 +50,7 @@ export default function AdminPage() {
   }
 
   const loadData = async () => {
-    const supabase = createClient()
+    const supabase = createSupabase()
 
     // Load stats
     const [{ count: userCount }, { count: vehicleCount }, { count: brandCount }, { count: signalCount }] = await Promise.all([

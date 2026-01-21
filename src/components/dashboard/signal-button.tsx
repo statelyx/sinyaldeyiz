@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { createSupabase } from '@/lib/supabase/client'
 import {
     startSignal,
     stopSignal,
