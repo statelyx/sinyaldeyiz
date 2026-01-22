@@ -1,5 +1,4 @@
 import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import type { Database } from '@/types/database'
@@ -9,47 +8,70 @@ export async function GET(request: NextRequest) {
   const code = requestUrl.searchParams.get('code')
   const origin = requestUrl.origin
 
-  if (code) {
-    const cookieStore = await cookies()
+  if (!code) {
+    console.error('No code provided in callback')
+    return NextResponse.redirect(`${origin}/?error=no_code`)
+  }
 
-    const supabase = createServerClient<Database>(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll()
-          },
-          setAll(cookiesToSet: { name: string; value: string; options?: any }[]) {
-            try {
-              cookiesToSet.forEach(({ name, value, options }) =>
-                cookieStore.set(name, value, {
-                  ...options,
-                  httpOnly: true,
-                  secure: process.env.NODE_ENV === 'production',
-                  sameSite: 'lax',
-                  path: '/',
-                  maxAge: 60 * 60 * 24 * 7, // 7 days
-                })
-              )
-            } catch {
-              // Ignore - called from Server Component
-            }
-          },
+  // Create response first - we'll use this to set cookies
+  const response = NextResponse.next()
+
+  // Create cookies array to collect all cookies that need to be set
+  const cookiesToStore: { name: string; value: string; options: any }[] = []
+
+  const supabase = createServerClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          // Get all cookies from the request
+          return request.cookies.getAll().map(cookie => ({
+            name: cookie.name,
+            value: cookie.value,
+          }))
         },
-      }
-    )
+        setAll(cookies: { name: string; value: string; options?: any }[]) {
+          // Store cookies to be set on response
+          cookies.forEach(({ name, value, options }) => {
+            cookiesToStore.push({
+              name,
+              value,
+              options: {
+                ...options,
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'lax' as const,
+                path: '/',
+                maxAge: 60 * 60 * 24 * 7, // 7 days
+              },
+            })
+          })
+        },
+      },
+    }
+  )
 
+  try {
     const { data, error } = await supabase.auth.exchangeCodeForSession(code)
 
     if (error) {
-      console.error('Auth callback error:', error.message)
-      return NextResponse.redirect(`${origin}/?error=auth_callback_error`)
+      console.error('Auth exchange error:', error.message, error)
+      return NextResponse.redirect(`${origin}/?error=exchange_failed&message=${encodeURIComponent(error.message)}`)
     }
 
-    if (data.user) {
-      console.log('Auth successful for user:', data.user.id)
+    if (!data.session || !data.user) {
+      console.error('No session or user in response')
+      return NextResponse.redirect(`${origin}/?error=no_session`)
+    }
 
+    console.log('Auth successful for user:', data.user.id)
+    console.log('Session expires at:', data.session.expires_at)
+
+    // Determine redirect URL based on profile
+    let redirectUrl = `${origin}/onboarding`
+
+    try {
       // Check if profile exists
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
@@ -59,8 +81,8 @@ export async function GET(request: NextRequest) {
 
       console.log('Profile query result:', { profile, profileError })
 
-      // If profile doesn't exist, create one
       if (profileError?.code === 'PGRST116' || !profile) {
+        // No profile exists - create one
         console.log('Creating new profile for user:', data.user.id)
 
         const provider = data.user.app_metadata?.provider || 'email'
@@ -76,36 +98,48 @@ export async function GET(request: NextRequest) {
           updated_at: new Date().toISOString(),
         }
 
-        // Use upsert to handle race conditions
-        const { error: insertError } = await (supabase.from('profiles') as any)
+        const { error: insertError } = await supabase
+          .from('profiles')
           .upsert(newProfile, { onConflict: 'id' })
 
         if (insertError) {
           console.error('Profile creation error:', insertError)
-          // Even if profile creation fails, redirect to onboarding 
-          // The onboarding page will try to create the profile again
+          // Continue to onboarding even if profile creation fails
         } else {
           console.log('Profile created successfully')
         }
 
-        // New user - go to onboarding
-        const response = NextResponse.redirect(`${origin}/onboarding`)
-        return response
-      }
-
-      console.log('Profile found:', profile)
-
-      // Existing user - check onboarding status
-      if ((profile as any)?.onboarding_completed === true || (profile as any)?.nickname) {
-        console.log('Redirecting onboarded user to dashboard')
-        return NextResponse.redirect(`${origin}/dashboard`)
+        redirectUrl = `${origin}/onboarding`
+      } else if (profile?.onboarding_completed === true || profile?.nickname) {
+        // Existing user with completed onboarding
+        console.log('User has completed onboarding, redirecting to dashboard')
+        redirectUrl = `${origin}/dashboard`
       } else {
-        console.log('Redirecting existing user to onboarding')
-        return NextResponse.redirect(`${origin}/onboarding`)
+        // Existing user without completed onboarding
+        console.log('User needs to complete onboarding')
+        redirectUrl = `${origin}/onboarding`
       }
+    } catch (profileErr) {
+      console.error('Profile check error:', profileErr)
+      // Default to onboarding on any error
+      redirectUrl = `${origin}/onboarding`
     }
-  }
 
-  console.log('Fallback: redirecting to home')
-  return NextResponse.redirect(`${origin}/`)
+    // Create redirect response with cookies
+    const redirectResponse = NextResponse.redirect(redirectUrl)
+
+    // Set all collected cookies on the redirect response
+    cookiesToStore.forEach(({ name, value, options }) => {
+      redirectResponse.cookies.set(name, value, options)
+    })
+
+    console.log('Redirecting to:', redirectUrl)
+    console.log('Cookies set:', cookiesToStore.map(c => c.name).join(', '))
+
+    return redirectResponse
+
+  } catch (err) {
+    console.error('Unexpected error in auth callback:', err)
+    return NextResponse.redirect(`${origin}/?error=unexpected_error`)
+  }
 }

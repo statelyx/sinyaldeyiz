@@ -2,10 +2,8 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
-  let response = NextResponse.next({
-    request: {
-      headers: request.headers,
-    },
+  let supabaseResponse = NextResponse.next({
+    request,
   })
 
   const supabase = createServerClient(
@@ -13,47 +11,32 @@ export async function middleware(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name: string) {
-          return request.cookies.get(name)?.value
+        getAll() {
+          return request.cookies.getAll()
         },
-        set(name: string, value: string, options: any) {
-          const cookieOptions = {
-            ...options,
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax' as const,
-            path: '/'
-          }
-          request.cookies.set({ name, value, ...cookieOptions })
-          response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
+        setAll(cookiesToSet: { name: string; value: string; options?: any }[]) {
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+          supabaseResponse = NextResponse.next({
+            request,
           })
-          response.cookies.set({ name, value, ...cookieOptions })
-        },
-        remove(name: string, options: any) {
-          const cookieOptions = {
-            ...options,
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax' as const,
-            path: '/'
-          }
-          request.cookies.set({ name, value: '', ...cookieOptions })
-          response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
-          })
-          response.cookies.set({ name, value: '', ...cookieOptions })
+          cookiesToSet.forEach(({ name, value, options }) =>
+            supabaseResponse.cookies.set(name, value, {
+              ...options,
+              httpOnly: true,
+              secure: process.env.NODE_ENV === 'production',
+              sameSite: 'lax' as const,
+              path: '/',
+            })
+          )
         },
       },
     }
   )
 
-  // Use getUser() instead of getSession() for reliable auth check
-  // getSession() can return stale cached data, getUser() verifies with Supabase
+  // IMPORTANT: Do not run code between createServerClient and
+  // supabase.auth.getUser(). A simple mistake could make it very hard to debug
+  // issues with users being randomly logged out.
+
   const { data: { user }, error } = await supabase.auth.getUser()
 
   if (error) {
@@ -62,35 +45,29 @@ export async function middleware(request: NextRequest) {
 
   const { pathname } = request.nextUrl
 
-  // Korumalı rotalar
+  // Protected routes
   const protectedPaths = ['/dashboard', '/garage', '/forum', '/map', '/profile', '/stats', '/drivers', '/messages', '/weather']
   const isProtectedPath = protectedPaths.some(path => pathname.startsWith(path))
 
-  // Auth sayfaları (giriş yapmış kullanıcıya gösterme)
+  // Auth pages (don't show to logged in users)
   const authPaths = ['/login', '/register']
   const isAuthPath = authPaths.some(path => pathname.startsWith(path))
 
-  // Ana sayfa ve auth callback hariç her yer için kontrol
-  const publicPaths = ['/', '/auth/callback', '/offline', '/onboarding']
-  const isPublicPath = publicPaths.some(path => pathname === path || pathname.startsWith(path))
-
-  // Eğer kullanıcı giriş yapmamışsa ve korumalı bir rotaya erişmeye çalışıyorsa
+  // If user is not logged in and trying to access protected route
   if (isProtectedPath && !user) {
     const redirectUrl = new URL('/', request.url)
     return NextResponse.redirect(redirectUrl)
   }
 
-  // Eğer kullanıcı giriş yapmışsa ve auth sayfalarına erişmeye çalışıyorsa
+  // If user is logged in and trying to access auth pages
   if (isAuthPath && user) {
     const redirectUrl = new URL('/dashboard', request.url)
     return NextResponse.redirect(redirectUrl)
   }
 
-  // Onboarding kontrolü KALDIRILDI - Client-side'a taşındı (supabase-provider.tsx)
-  // Bu, middleware'deki performans sorununu ve redirect loop'u çözer
-  // Onboarding kontrolü artık client-side auth provider'da yapılıyor
-
-  return response
+  // IMPORTANT: Return supabaseResponse instead of NextResponse.next()
+  // This ensures cookies are properly forwarded
+  return supabaseResponse
 }
 
 export const config = {
