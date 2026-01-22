@@ -11,9 +11,16 @@ export default function HomePage() {
   const { user, loading } = useAuth()
   const router = useRouter()
 
-  // Redirect authenticated users
+  // Redirect authenticated users (but not if they were just on onboarding page)
   useEffect(() => {
     if (loading || !user) return
+
+    // Skip redirect if user was just on onboarding page (prevents redirect loop)
+    const onboardingVisited = sessionStorage.getItem('onboarding_page_visited')
+    if (onboardingVisited === 'true') {
+      sessionStorage.removeItem('onboarding_page_visited')
+      return
+    }
 
     const checkOnboardingAndRedirect = async () => {
       const supabase = await import('@/lib/supabase/client').then(m => m.createSupabase())

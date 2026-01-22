@@ -60,10 +60,24 @@ export default function OnboardingPage() {
 
   // Redirect if not authenticated
   useEffect(() => {
+    // Only redirect unauthenticated users
     if (authState === 'unauthenticated') {
       router.push('/')
-    } else if (authState === 'authenticated_onboarded') {
+      return
+    }
+
+    // If user is already onboarded, redirect to dashboard
+    if (authState === 'authenticated_onboarded') {
       router.push('/dashboard')
+      return
+    }
+
+    // Set flag to prevent home page from redirecting back here
+    // This handles the case where auth callback sends us here before profile is fully loaded
+    if (authState === 'authenticated_not_onboarded' || authState === 'loading') {
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('onboarding_page_visited', 'true')
+      }
     }
   }, [authState, router])
 
@@ -230,8 +244,17 @@ export default function OnboardingPage() {
 
   const stepNumber = currentStep === 'avatar' ? 1 : currentStep === 'vehicle' ? 2 : 3
 
-  // Don't render if not authenticated
-  if (authState === 'unauthenticated' || authState === 'loading') {
+  // Don't render if not authenticated (but allow loading state to show content)
+  if (authState === 'unauthenticated') {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="w-12 h-12 border-4 border-yellow-400 border-t-transparent rounded-full animate-spin" />
+      </div>
+    )
+  }
+
+  // Show loading spinner only if we're still loading AND don't have a user yet
+  if (loading && !user) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="w-12 h-12 border-4 border-yellow-400 border-t-transparent rounded-full animate-spin" />
