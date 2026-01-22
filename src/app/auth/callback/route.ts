@@ -4,8 +4,6 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import type { Database } from '@/types/database'
 
-type Profile = Database['public']['Tables']['profiles']['Insert']
-
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url)
   const code = requestUrl.searchParams.get('code')
@@ -19,14 +17,24 @@ export async function GET(request: NextRequest) {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         cookies: {
-          get(name: string) {
-            return cookieStore.get(name)?.value
+          getAll() {
+            return cookieStore.getAll()
           },
-          set: (name: string, value: string) => {
-            cookieStore.set({ name, value })
-          },
-          remove: (name: string) => {
-            cookieStore.delete(name)
+          setAll(cookiesToSet) {
+            try {
+              cookiesToSet.forEach(({ name, value, options }) =>
+                cookieStore.set(name, value, {
+                  ...options,
+                  httpOnly: true,
+                  secure: process.env.NODE_ENV === 'production',
+                  sameSite: 'lax',
+                  path: '/',
+                  maxAge: 60 * 60 * 24 * 7, // 7 days
+                })
+              )
+            } catch {
+              // Ignore - called from Server Component
+            }
           },
         },
       }
@@ -42,6 +50,7 @@ export async function GET(request: NextRequest) {
     if (data.user) {
       console.log('Auth successful for user:', data.user.id)
 
+      // Check if profile exists
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('nickname, onboarding_completed')
@@ -50,7 +59,8 @@ export async function GET(request: NextRequest) {
 
       console.log('Profile query result:', { profile, profileError })
 
-      if (profileError || !profile) {
+      // If profile doesn't exist, create one
+      if (profileError?.code === 'PGRST116' || !profile) {
         console.log('Creating new profile for user:', data.user.id)
 
         const provider = data.user.app_metadata?.provider || 'email'
@@ -66,21 +76,26 @@ export async function GET(request: NextRequest) {
           updated_at: new Date().toISOString(),
         }
 
+        // Use upsert to handle race conditions
         const { error: insertError } = await (supabase.from('profiles') as any)
-          .upsert(newProfile)
+          .upsert(newProfile, { onConflict: 'id' })
 
         if (insertError) {
           console.error('Profile creation error:', insertError)
+          // Even if profile creation fails, redirect to onboarding 
+          // The onboarding page will try to create the profile again
         } else {
           console.log('Profile created successfully')
         }
 
-        console.log('Redirecting new user to onboarding')
-        return NextResponse.redirect(`${origin}/onboarding`)
+        // New user - go to onboarding
+        const response = NextResponse.redirect(`${origin}/onboarding`)
+        return response
       }
 
       console.log('Profile found:', profile)
 
+      // Existing user - check onboarding status
       if ((profile as any)?.onboarding_completed === true || (profile as any)?.nickname) {
         console.log('Redirecting onboarded user to dashboard')
         return NextResponse.redirect(`${origin}/dashboard`)
