@@ -73,15 +73,17 @@ export async function GET(request: NextRequest) {
 
     try {
       // Check if profile exists
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
+      const { data: profile, error: profileError } = await (supabase
+        .from('profiles') as any)
         .select('nickname, onboarding_completed')
         .eq('id', data.user.id)
         .single()
 
       console.log('Profile query result:', { profile, profileError })
 
-      if (profileError?.code === 'PGRST116' || !profile) {
+      const profileData = profile as { nickname: string | null; onboarding_completed: boolean } | null
+
+      if (profileError?.code === 'PGRST116' || !profileData) {
         // No profile exists - create one
         console.log('Creating new profile for user:', data.user.id)
 
@@ -98,8 +100,8 @@ export async function GET(request: NextRequest) {
           updated_at: new Date().toISOString(),
         }
 
-        const { error: insertError } = await supabase
-          .from('profiles')
+        const { error: insertError } = await (supabase
+          .from('profiles') as any)
           .upsert(newProfile, { onConflict: 'id' })
 
         if (insertError) {
@@ -110,7 +112,7 @@ export async function GET(request: NextRequest) {
         }
 
         redirectUrl = `${origin}/onboarding`
-      } else if (profile?.onboarding_completed === true || profile?.nickname) {
+      } else if (profileData.onboarding_completed === true || profileData.nickname) {
         // Existing user with completed onboarding
         console.log('User has completed onboarding, redirecting to dashboard')
         redirectUrl = `${origin}/dashboard`
