@@ -30,10 +30,12 @@ export function AuthModal({ isOpen, onClose, mode, onModeChange }: AuthModalProp
         try {
             const supabase = createSupabase()
 
-            // Use environment variable for redirect URL - no runtime calculation
-            const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ||
-                (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000')
-            const redirectUrl = `${siteUrl}/auth/callback`
+            // Always use window.location.origin for client-side OAuth
+            // This ensures correct redirect in both dev and production
+            const origin = typeof window !== 'undefined' ? window.location.origin : ''
+            const redirectUrl = `${origin}/auth/callback`
+
+            console.log('OAuth redirect URL:', redirectUrl)
 
             const { data, error } = await supabase.auth.signInWithOAuth({
                 provider: 'google',
@@ -75,9 +77,8 @@ export function AuthModal({ isOpen, onClose, mode, onModeChange }: AuthModalProp
         try {
             const supabase = createSupabase()
 
-            // Use environment variable for redirect URL
-            const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ||
-                (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000')
+            // Always use window.location.origin for client-side auth
+            const origin = typeof window !== 'undefined' ? window.location.origin : ''
 
             if (mode === 'register') {
                 if (password !== confirmPassword) {
@@ -96,7 +97,7 @@ export function AuthModal({ isOpen, onClose, mode, onModeChange }: AuthModalProp
                     email,
                     password,
                     options: {
-                        emailRedirectTo: `${siteUrl}/auth/callback`,
+                        emailRedirectTo: `${origin}/auth/callback`,
                     }
                 })
 
