@@ -25,25 +25,19 @@ export async function GET(request: NextRequest) {
     {
       cookies: {
         getAll() {
-          // Get all cookies from the request
-          return request.cookies.getAll().map(cookie => ({
+          return request.cookies.getAll().map((cookie) => ({
             name: cookie.name,
             value: cookie.value,
           }))
         },
-        setAll(cookies: { name: string; value: string; options?: any }[]) {
-          // Store cookies to be set on response
-          cookies.forEach(({ name, value, options }) => {
+        setAll(cookiesToSet: { name: string; value: string; options?: any }[]) {
+          cookiesToSet.forEach(({ name, value, options }) => {
             cookiesToStore.push({
               name,
               value,
               options: {
                 ...options,
-                httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
-                sameSite: 'lax' as const,
                 path: '/',
-                maxAge: 60 * 60 * 24 * 7, // 7 days
               },
             })
           })

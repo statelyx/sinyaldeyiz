@@ -67,6 +67,18 @@ export default function OnboardingPage() {
 
     // Only redirect unauthenticated users
     if (authState === 'unauthenticated') {
+      // Check if we just came from auth modal or callback
+      if (typeof window !== 'undefined') {
+        const isRedirecting = sessionStorage.getItem('auth_modal_redirect') === 'true'
+        const timestamp = sessionStorage.getItem('auth_modal_timestamp')
+        const isRecent = timestamp && (Date.now() - parseInt(timestamp)) < 10000 // 10 seconds
+
+        if (isRedirecting && isRecent) {
+          console.log('Onboarding: Recent auth redirect detected, waiting for hydration...')
+          return
+        }
+      }
+
       router.push('/')
       return
     }
