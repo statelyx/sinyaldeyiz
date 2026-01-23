@@ -1,4 +1,5 @@
 import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import type { Database } from '@/types/database'
@@ -16,31 +17,27 @@ export async function GET(request: NextRequest) {
   // Create response first - we'll use this to set cookies
   const response = NextResponse.next()
 
-  // Create cookies array to collect all cookies that need to be set
-  const cookiesToStore: { name: string; value: string; options: any }[] = []
-
+  const cookieStore = await cookies()
   const supabase = createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
         getAll() {
-          return request.cookies.getAll().map((cookie) => ({
+          return cookieStore.getAll().map((cookie) => ({
             name: cookie.name,
             value: cookie.value,
           }))
         },
         setAll(cookiesToSet: { name: string; value: string; options?: any }[]) {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            cookiesToStore.push({
-              name,
-              value,
-              options: {
-                ...options,
-                path: '/',
-              },
+          try {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              cookieStore.set(name, value, { ...options, path: '/' })
             })
-          })
+          } catch (err) {
+            // Handle middleware or server action context where cookies().set might fail
+            console.error('Error setting cookies in callback:', err)
+          }
         },
       },
     }
@@ -127,18 +124,8 @@ export async function GET(request: NextRequest) {
       redirectUrl = `${origin}/onboarding`
     }
 
-    // Create redirect response with cookies
-    const redirectResponse = NextResponse.redirect(redirectUrl)
-
-    // Set all collected cookies on the redirect response
-    cookiesToStore.forEach(({ name, value, options }) => {
-      redirectResponse.cookies.set(name, value, options)
-    })
-
     console.log('Redirecting to:', redirectUrl)
-    console.log('Cookies set:', cookiesToStore.map(c => c.name).join(', '))
-
-    return redirectResponse
+    return NextResponse.redirect(redirectUrl)
 
   } catch (err) {
     console.error('Unexpected error in auth callback:', err)

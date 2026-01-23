@@ -57,6 +57,7 @@ export async function middleware(request: NextRequest) {
 
   // If user is not logged in and trying to access protected route (except onboarding)
   if (isProtectedPath && !user && !isOnboardingPath) {
+    console.log('Middleware: Redirecting unauthenticated user to /')
     const redirectUrl = new URL('/', request.url)
     return NextResponse.redirect(redirectUrl)
   }
