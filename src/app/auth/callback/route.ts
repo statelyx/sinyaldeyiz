@@ -14,6 +14,14 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(`${origin}/?error=no_code`)
   }
 
+  // Debug: Log all incoming cookies
+  const cookieStore = await cookies()
+  const allCookies = cookieStore.getAll()
+  console.log('Callback: All incoming cookies:', allCookies.map(c => c.name).join(', '))
+
+  const verifier = cookieStore.get('sb-callback-code-verifier')?.value
+  console.log('Callback: PKCE Verifier present:', !!verifier)
+
   // Create response first - we'll use this to set cookies
   const response = NextResponse.next()
 
@@ -47,7 +55,12 @@ export async function GET(request: NextRequest) {
     const { data, error } = await supabase.auth.exchangeCodeForSession(code)
 
     if (error) {
-      console.error('Auth exchange error:', error.message, error)
+      console.error('Auth exchange error details:', {
+        message: error.message,
+        status: error.status,
+        name: error.name,
+        verifier_present: !!verifier
+      })
       return NextResponse.redirect(`${origin}/?error=exchange_failed&message=${encodeURIComponent(error.message)}`)
     }
 
