@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(`${origin}/?error=no_code`)
   }
 
-  // Debug: Log all incoming cookies
+  // Create cookies store - we'll use this to set cookies
   const cookieStore = await cookies()
   const allCookies = cookieStore.getAll()
   console.log('Callback: All incoming cookies:', allCookies.map(c => c.name).join(', '))
@@ -22,10 +22,6 @@ export async function GET(request: NextRequest) {
   const verifier = cookieStore.get('sb-callback-code-verifier')?.value
   console.log('Callback: PKCE Verifier present:', !!verifier)
 
-  // Create response first - we'll use this to set cookies
-  const response = NextResponse.next()
-
-  const cookieStore = await cookies()
   const supabase = createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
