@@ -111,15 +111,21 @@ export async function GET(request: NextRequest) {
           console.log('Profile created successfully')
         }
 
-        redirectUrl = `${origin}/onboarding`
+        // Small delay to ensure cookies are set
+        await new Promise(resolve => setTimeout(resolve, 100))
+        redirectUrl = `${origin}/onboarding?auth=new`
       } else if (profileData.onboarding_completed === true || profileData.nickname) {
         // Existing user with completed onboarding
         console.log('User has completed onboarding, redirecting to dashboard')
-        redirectUrl = `${origin}/dashboard`
+        // Small delay to ensure cookies are set
+        await new Promise(resolve => setTimeout(resolve, 100))
+        redirectUrl = `${origin}/dashboard?auth=success`
       } else {
         // Existing user without completed onboarding
         console.log('User needs to complete onboarding')
-        redirectUrl = `${origin}/onboarding`
+        // Small delay to ensure cookies are set
+        await new Promise(resolve => setTimeout(resolve, 100))
+        redirectUrl = `${origin}/onboarding?auth=returning`
       }
     } catch (profileErr) {
       console.error('Profile check error:', profileErr)

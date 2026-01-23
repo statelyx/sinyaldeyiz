@@ -206,7 +206,7 @@ export default function ForumPage() {
                                 <span>❤️</span>
                                 <span>{post.likes}</span>
                             </button>
-                            <button className="flex items-center gap-2 text-slate-400 hover:text-blue-400 transition-colors">
+                            <button className="flex items-center gap-2 text-slate-400 hover:text-yellow-400 transition-colors">
                                 <span>💬</span>
                                 <span>{post.comments}</span>
                             </button>

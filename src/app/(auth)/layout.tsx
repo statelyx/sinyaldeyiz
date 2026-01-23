@@ -23,7 +23,7 @@ export default function AuthLayout({
               </Link>
               <Link
                 href="/register"
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-white transition-colors"
+                className="px-4 py-2 bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-300 hover:to-orange-400 rounded-lg text-black font-semibold transition-colors"
               >
                 Kayıt Ol
               </Link>

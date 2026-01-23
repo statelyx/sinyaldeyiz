@@ -67,7 +67,7 @@ export function VehicleCascader({ onVehicleSelect, initialVehicle }: VehicleCasc
           id="brand"
           value={selectedBrand}
           onChange={(e) => handleBrandChange(e.target.value)}
-          className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-yellow-400/50"
           required
         >
           <option value="">Marka Seçin</option>
@@ -87,7 +87,7 @@ export function VehicleCascader({ onVehicleSelect, initialVehicle }: VehicleCasc
             id="model"
             value={selectedModel}
             onChange={(e) => handleModelChange(e.target.value)}
-            className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-yellow-400/50"
             required
           >
             <option value="">Model Seçin</option>
@@ -108,7 +108,7 @@ export function VehicleCascader({ onVehicleSelect, initialVehicle }: VehicleCasc
             id="trim"
             value={selectedTrim?.id || ''}
             onChange={(e) => handleTrimChange(e.target.value)}
-            className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-yellow-400/50"
             required
           >
             <option value="">Donanım Seçin</option>
@@ -131,7 +131,7 @@ export function VehicleCascader({ onVehicleSelect, initialVehicle }: VehicleCasc
             id="year"
             value={selectedYear}
             onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-            className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-yellow-400/50"
             required
           >
             <option value="">Yıl Seçin</option>

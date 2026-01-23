@@ -45,7 +45,7 @@ export default function StatsPage() {
                     {[
                         { label: 'Sinyal Gönderilen', value: stats.signals_sent, icon: '📡', color: 'from-yellow-400 to-orange-500' },
                         { label: 'Sinyal Alınan', value: stats.signals_received, icon: '📲', color: 'from-green-400 to-emerald-500' },
-                        { label: 'Profil Görüntüleme', value: stats.profile_views, icon: '👁️', color: 'from-blue-400 to-cyan-500' },
+                        { label: 'Profil Görüntüleme', value: stats.profile_views, icon: '👁️', color: 'from-yellow-400 to-orange-500' },
                         { label: 'Mesaj Gönderilen', value: stats.messages_sent, icon: '💬', color: 'from-purple-400 to-pink-500' },
                     ].map((stat, i) => (
                         <div

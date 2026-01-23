@@ -148,7 +148,7 @@ export default function GaragePage() {
                     <p className="text-white/60 text-sm">Fotoğraf</p>
                 </div>
                 <div className="bg-white/5 rounded-xl p-4 border border-white/10 text-center">
-                    <p className="text-3xl font-bold text-blue-400">0</p>
+                    <p className="text-3xl font-bold text-yellow-400">0</p>
                     <p className="text-white/60 text-sm">Beğeni</p>
                 </div>
             </div>

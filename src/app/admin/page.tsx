@@ -39,7 +39,26 @@ export default function AdminPage() {
       return
     }
 
-    if (!ADMIN_EMAILS.includes(user.email)) {
+    // Check both email (legacy) and role (new)
+    const isEmailAdmin = ADMIN_EMAILS.includes(user.email)
+
+    // Check profile role if available
+    let isRoleAdmin = false
+    try {
+      const supabase = createSupabase()
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single() as any
+
+      isRoleAdmin = profile?.role === 'admin'
+    } catch (err) {
+      console.error('Error checking admin role:', err)
+    }
+
+    if (!isEmailAdmin && !isRoleAdmin) {
+      console.warn('Unauthorized admin access attempt by:', user.email)
       router.push('/')
       return
     }
@@ -162,7 +181,7 @@ export default function AdminPage() {
         {/* Stats Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           {[
-            { label: 'Toplam Kullanıcı', value: stats.totalUsers, icon: '👥', color: 'from-blue-500/20 to-cyan-500/20' },
+            { label: 'Toplam Kullanıcı', value: stats.totalUsers, icon: '👥', color: 'from-yellow-500/20 to-orange-500/20' },
             { label: 'Toplam Araç', value: stats.totalVehicles, icon: '🚗', color: 'from-yellow-500/20 to-orange-500/20' },
             { label: 'Marka Sayısı', value: stats.totalBrands, icon: '🏷️', color: 'from-green-500/20 to-emerald-500/20' },
             { label: 'Aktif Sinyal', value: stats.activeSignals, icon: '📍', color: 'from-red-500/20 to-pink-500/20' },
@@ -333,7 +352,7 @@ export default function AdminPage() {
                         <span
                           className={`text-xs px-2 py-1 rounded-full ${
                             brand.type === 'car'
-                              ? 'bg-blue-500/20 text-blue-400'
+                              ? 'bg-yellow-500/20 text-yellow-400'
                               : 'bg-orange-500/20 text-orange-400'
                           }`}
                         >

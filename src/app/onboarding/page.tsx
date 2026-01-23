@@ -60,6 +60,11 @@ export default function OnboardingPage() {
 
   // Redirect if not authenticated
   useEffect(() => {
+    // Don't redirect during loading - let auth state settle
+    if (authState === 'loading') {
+      return
+    }
+
     // Only redirect unauthenticated users
     if (authState === 'unauthenticated') {
       router.push('/')
@@ -74,9 +79,11 @@ export default function OnboardingPage() {
 
     // Set flag to prevent home page from redirecting back here
     // This handles the case where auth callback sends us here before profile is fully loaded
-    if (authState === 'authenticated_not_onboarded' || authState === 'loading') {
+    if (authState === 'authenticated_not_onboarded') {
       if (typeof window !== 'undefined') {
         sessionStorage.setItem('onboarding_page_visited', 'true')
+        // Also set a timestamp to prevent stale flags
+        sessionStorage.setItem('onboarding_visit_timestamp', Date.now().toString())
       }
     }
   }, [authState, router])

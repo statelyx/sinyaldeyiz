@@ -129,12 +129,20 @@ export function AuthModal({ isOpen, onClose, mode, onModeChange }: AuthModalProp
 
                     onClose()
 
-                    // Use window.location.href for full page reload to ensure session is properly loaded
-                    if ((profile as any)?.onboarding_completed || (profile as any)?.nickname) {
-                        window.location.href = '/dashboard'
-                    } else {
-                        window.location.href = '/onboarding'
+                    // Set flags to prevent redirect loops
+                    if (typeof window !== 'undefined') {
+                        sessionStorage.setItem('auth_modal_redirect', 'true')
+                        sessionStorage.setItem('auth_modal_timestamp', Date.now().toString())
                     }
+
+                    // Use router.push with a small delay for better state management
+                    setTimeout(() => {
+                        if ((profile as any)?.onboarding_completed || (profile as any)?.nickname) {
+                            router.push('/dashboard')
+                        } else {
+                            router.push('/onboarding')
+                        }
+                    }, 100)
                 }
             }
         } catch (err: any) {

@@ -78,7 +78,7 @@ export function LoginForm() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-yellow-400/50"
               placeholder="ornek@email.com"
             />
           </div>
@@ -93,7 +93,7 @@ export function LoginForm() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-yellow-400/50"
               placeholder="••••••••"
             />
           </div>
@@ -101,7 +101,7 @@ export function LoginForm() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 text-white font-semibold rounded-lg transition-colors"
+            className="w-full py-3 bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-300 hover:to-orange-400 disabled:from-slate-600 disabled:to-slate-700 text-black font-semibold rounded-lg transition-colors"
           >
             {loading ? 'Giriş yapılıyor...' : 'Giriş Yap'}
           </button>
@@ -109,7 +109,7 @@ export function LoginForm() {
 
         <div className="mt-6 text-center text-sm text-slate-400">
           Hesabınız yok mu?{' '}
-          <Link href="/register" className="text-blue-400 hover:text-blue-300">
+          <Link href="/register" className="text-yellow-400 hover:text-yellow-300">
             Kayıt Ol
           </Link>
         </div>

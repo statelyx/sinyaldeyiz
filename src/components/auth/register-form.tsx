@@ -75,7 +75,7 @@ export function RegisterForm() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-yellow-400/50"
               placeholder="ornek@email.com"
             />
           </div>
@@ -91,7 +91,7 @@ export function RegisterForm() {
               onChange={(e) => setPassword(e.target.value)}
               required
               minLength={6}
-              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-yellow-400/50"
               placeholder="En az 6 karakter"
             />
           </div>
@@ -107,7 +107,7 @@ export function RegisterForm() {
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
               minLength={6}
-              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-yellow-400/50"
               placeholder="Şifrenizi tekrar girin"
             />
           </div>
@@ -115,7 +115,7 @@ export function RegisterForm() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 text-white font-semibold rounded-lg transition-colors"
+            className="w-full py-3 bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-300 hover:to-orange-400 disabled:from-slate-600 disabled:to-slate-700 text-black font-semibold rounded-lg transition-colors"
           >
             {loading ? 'Kaydediliyor...' : 'Kayıt Ol'}
           </button>
@@ -123,7 +123,7 @@ export function RegisterForm() {
 
         <div className="mt-6 text-center text-sm text-slate-400">
           Zaten hesabınız var mı?{' '}
-          <Link href="/login" className="text-blue-400 hover:text-blue-300">
+          <Link href="/login" className="text-yellow-400 hover:text-yellow-300">
             Giriş Yap
           </Link>
         </div>
@@ -131,7 +131,7 @@ export function RegisterForm() {
 
       <div className="mt-4 p-4 bg-slate-800/50 rounded-lg border border-slate-700">
         <p className="text-sm text-slate-400">
-          🔒 Kayıt olarak <Link href="/privacy" className="text-blue-400 hover:underline">Gizlilik Politikası</Link>'nı kabul etmiş olursunuz.
+          🔒 Kayıt olarak <Link href="/privacy" className="text-yellow-400 hover:underline">Gizlilik Politikası</Link>'nı kabul etmiş olursunuz.
           Konum bilgileriniz varsayılan olarak gizlidir.
         </p>
       </div>

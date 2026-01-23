@@ -46,15 +46,18 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // Protected routes
-  const protectedPaths = ['/dashboard', '/garage', '/forum', '/map', '/profile', '/stats', '/drivers', '/messages', '/weather']
+  const protectedPaths = ['/dashboard', '/garage', '/forum', '/map', '/profile', '/stats', '/drivers', '/messages', '/weather', '/admin']
   const isProtectedPath = protectedPaths.some(path => pathname.startsWith(path))
 
   // Auth pages (don't show to logged in users)
   const authPaths = ['/login', '/register']
   const isAuthPath = authPaths.some(path => pathname.startsWith(path))
 
-  // If user is not logged in and trying to access protected route
-  if (isProtectedPath && !user) {
+  // Onboarding path - allow authenticated users to access without redirect
+  const isOnboardingPath = pathname.startsWith('/onboarding')
+
+  // If user is not logged in and trying to access protected route (except onboarding)
+  if (isProtectedPath && !user && !isOnboardingPath) {
     const redirectUrl = new URL('/', request.url)
     return NextResponse.redirect(redirectUrl)
   }

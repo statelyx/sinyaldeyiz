@@ -17,23 +17,43 @@ export default function HomePage() {
 
     // Skip redirect if user was just on onboarding page (prevents redirect loop)
     const onboardingVisited = sessionStorage.getItem('onboarding_page_visited')
+    const visitTimestamp = sessionStorage.getItem('onboarding_visit_timestamp')
+
+    // Clear flag if it's stale (older than 5 seconds)
+    if (visitTimestamp && Date.now() - parseInt(visitTimestamp) > 5000) {
+      sessionStorage.removeItem('onboarding_page_visited')
+      sessionStorage.removeItem('onboarding_visit_timestamp')
+      return
+    }
+
     if (onboardingVisited === 'true') {
       sessionStorage.removeItem('onboarding_page_visited')
+      sessionStorage.removeItem('onboarding_visit_timestamp')
       return
     }
 
     const checkOnboardingAndRedirect = async () => {
-      const supabase = await import('@/lib/supabase/client').then(m => m.createSupabase())
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('onboarding_completed')
-        .eq('id', user.id)
-        .single() as any
+      try {
+        const supabase = await import('@/lib/supabase/client').then(m => m.createSupabase())
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('onboarding_completed, nickname')
+          .eq('id', user.id)
+          .single() as any
 
-      if (profile?.onboarding_completed) {
-        router.push('/dashboard')
-      } else {
-        router.push('/onboarding')
+        // Only redirect if we successfully got profile data
+        if (!error && profile) {
+          // Check if onboarding is completed (either flag is true OR nickname exists)
+          if (profile.onboarding_completed === true || profile.nickname) {
+            router.push('/dashboard')
+          } else {
+            router.push('/onboarding')
+          }
+        }
+        // If error, don't redirect - let the user stay on home page
+      } catch (err) {
+        console.error('Error checking onboarding status:', err)
+        // Don't redirect on error
       }
     }
 
@@ -65,7 +85,7 @@ export default function HomePage() {
         {/* Glassmorphism animated blobs */}
         <div className="absolute top-[-20%] left-[-10%] w-[50vw] h-[50vw] bg-gradient-to-r from-yellow-400/20 to-orange-500/20 rounded-full blur-[120px] animate-blob" />
         <div className="absolute top-[30%] right-[-15%] w-[45vw] h-[45vw] bg-gradient-to-r from-purple-500/15 to-pink-500/15 rounded-full blur-[120px] animate-blob animation-delay-2000" />
-        <div className="absolute bottom-[-20%] left-[20%] w-[55vw] h-[55vw] bg-gradient-to-r from-blue-500/10 to-cyan-500/10 rounded-full blur-[120px] animate-blob animation-delay-4000" />
+        <div className="absolute bottom-[-20%] left-[20%] w-[55vw] h-[55vw] bg-gradient-to-r from-yellow-400/10 to-orange-500/10 rounded-full blur-[120px] animate-blob animation-delay-4000" />
 
         {/* Floating particles */}
         {[...Array(20)].map((_, i) => (

@@ -13,7 +13,7 @@ export interface Database {
         Row: {
           id: string
           email: string | null
-          nickname: string
+          nickname: string | null
           age: number | null
           gender: 'male' | 'female' | 'other' | 'prefer_not_to_say' | null
           city: string | null
@@ -21,13 +21,14 @@ export interface Database {
           provider: 'google' | 'email' | 'guest' | null
           is_guest: boolean
           onboarding_completed: boolean
+          role: 'user' | 'admin' | 'moderator' | null
           created_at: string
           updated_at: string
         }
         Insert: {
           id: string
           email?: string | null
-          nickname?: string
+          nickname?: string | null
           age?: number | null
           gender?: 'male' | 'female' | 'other' | 'prefer_not_to_say' | null
           city?: string | null
@@ -35,13 +36,14 @@ export interface Database {
           provider?: 'google' | 'email' | 'guest' | null
           is_guest?: boolean
           onboarding_completed?: boolean
+          role?: 'user' | 'admin' | 'moderator' | null
           created_at?: string
           updated_at?: string
         }
         Update: {
           id?: string
           email?: string | null
-          nickname?: string
+          nickname?: string | null
           age?: number | null
           gender?: 'male' | 'female' | 'other' | 'prefer_not_to_say' | null
           city?: string | null
@@ -49,6 +51,7 @@ export interface Database {
           provider?: 'google' | 'email' | 'guest' | null
           is_guest?: boolean
           onboarding_completed?: boolean
+          role?: 'user' | 'admin' | 'moderator' | null
           created_at?: string
           updated_at?: string
         }
