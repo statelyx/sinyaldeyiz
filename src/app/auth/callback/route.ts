@@ -19,8 +19,10 @@ export async function GET(request: NextRequest) {
   const allCookies = cookieStore.getAll()
   console.log('Callback: All incoming cookies:', allCookies.map(c => c.name).join(', '))
 
-  const verifier = cookieStore.get('sb-callback-code-verifier')?.value
-  console.log('Callback: PKCE Verifier present:', !!verifier)
+  // Find the PKCE verifier cookie (the name varies based on project ID)
+  const verifierCookie = allCookies.find(c => c.name.endsWith('-code-verifier'))
+  const verifier = verifierCookie?.value
+  console.log('Callback: PKCE Verifier found with name:', verifierCookie?.name, 'status:', !!verifier)
 
   const supabase = createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
