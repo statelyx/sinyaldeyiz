@@ -270,6 +270,7 @@ export default function MapView({ userLocation, visibleUsers, isSignalActive }: 
             const safeNickname = escapeHtml(user.nickname || 'Sürücü')
             const safeBrand = user.vehicle_brand ? escapeHtml(user.vehicle_brand) : ''
             const safeModel = user.vehicle_model ? escapeHtml(user.vehicle_model) : ''
+            const safeStatusMessage = user.status_message ? escapeHtml(user.status_message) : ''
             const brandSlug = getBrandSlug(user.vehicle_brand)
 
             el.innerHTML = `
@@ -280,12 +281,19 @@ export default function MapView({ userLocation, visibleUsers, isSignalActive }: 
           <div class="absolute -bottom-1 left-1/2 transform -translate-x-1/2 bg-black/90 backdrop-blur-md text-yellow-400 text-[11px] px-3 py-1 rounded-full whitespace-nowrap font-bold border-2 border-yellow-400/50">
             ${safeNickname}
           </div>
+          ${safeStatusMessage ? `
+            <div class="absolute -top-16 left-1/2 transform -translate-x-1/2 bg-black/95 backdrop-blur-md text-white text-xs px-3 py-2 rounded-xl whitespace-nowrap border border-yellow-400/40 shadow-lg max-w-[180px] truncate z-10">
+              💬 ${safeStatusMessage}
+              <div class="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2 rotate-45 w-2 h-2 bg-black/95 border-r border-b border-yellow-400/40"></div>
+            </div>
+          ` : ''}
         </div>
       `
 
             ;(el as any).dataset.safeBrand = safeBrand
             ;(el as any).dataset.safeModel = safeModel
             ;(el as any).dataset.safeNickname = safeNickname
+            ;(el as any).dataset.safeStatusMessage = safeStatusMessage
         }
 
         return el
