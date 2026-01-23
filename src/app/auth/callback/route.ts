@@ -19,7 +19,9 @@ export async function GET(request: NextRequest) {
   const allCookies = cookieStore.getAll()
   console.log('Callback: All incoming cookies:', allCookies.map(c => c.name).join(', '))
 
-  // Find the PKCE verifier cookie (the name varies based on project ID)
+  // Supabase looks for a cookie with the project ID in the name.
+  // We've confirmed it exists in allCookies. 
+  // Let's ensure the Supabase client can definitely see it by ensuring it's in the cookies() store.
   const verifierCookie = allCookies.find(c => c.name.endsWith('-code-verifier'))
   const verifier = verifierCookie?.value
   console.log('Callback: PKCE Verifier found with name:', verifierCookie?.name, 'status:', !!verifier)
@@ -41,7 +43,6 @@ export async function GET(request: NextRequest) {
               cookieStore.set(name, value, { ...options, path: '/' })
             })
           } catch (err) {
-            // Handle middleware or server action context where cookies().set might fail
             console.error('Error setting cookies in callback:', err)
           }
         },
@@ -50,6 +51,7 @@ export async function GET(request: NextRequest) {
   )
 
   try {
+    // If we have a verifier but the exchange might fail, let's log everything
     const { data, error } = await supabase.auth.exchangeCodeForSession(code)
 
     if (error) {
