@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { useAuth } from '@/components/providers/supabase-provider'
 import Link from 'next/link'
-import ThreeBackground from '@/components/three/ThreeBackground'
+import AnimatedBackground from '@/components/ui/AnimatedBackground'
+
 
 const navItems = [
   { href: '/dashboard', label: 'Ana Sayfa', icon: '🏠', mobileIcon: '🏠' },
@@ -70,9 +71,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-black relative">
-      {/* Three.js Background Animation */}
-      <ThreeBackground />
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-black relative">
+      {/* Animated Background - Landing page theme */}
+      <AnimatedBackground />
 
       {/* Desktop Sidebar */}
       <aside className={`fixed left-0 top-0 h-full w-64 bg-black/95 backdrop-blur-xl border-r border-white/5 hidden lg:flex flex-col z-40 transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>

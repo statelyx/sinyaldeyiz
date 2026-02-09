@@ -4,12 +4,17 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import type { VisibleUser } from '@/lib/services/location-service'
-import { ChatBubble } from './chat-bubble'
+import { getBrandSlug } from '@/lib/utils/brand-slug'
+import { escapeHtml, buildCurrentUserMarkerHtml, buildOtherUserMarkerHtml } from '@/lib/utils/marker-helpers'
 
 interface MapViewProps {
     userLocation: { lat: number; lon: number } | null
     visibleUsers: VisibleUser[]
     isSignalActive: boolean
+    userVehicleBrand?: string
+    userAvatarUrl?: string
+    userNickname?: string
+    userStatusMessage?: string
 }
 
 type MapStyle = 'light' | 'dark' | '3d-light' | '3d-dark'
@@ -131,7 +136,7 @@ const MAP_STYLES = {
     },
 }
 
-export default function MapView({ userLocation, visibleUsers, isSignalActive }: MapViewProps) {
+export default function MapView({ userLocation, visibleUsers, isSignalActive, userVehicleBrand, userAvatarUrl, userNickname, userStatusMessage }: MapViewProps) {
     const mapContainer = useRef<HTMLDivElement>(null)
     const map = useRef<maplibregl.Map | null>(null)
     const markers = useRef<maplibregl.Marker[]>([])
@@ -139,6 +144,8 @@ export default function MapView({ userLocation, visibleUsers, isSignalActive }: 
     const [mapLoaded, setMapLoaded] = useState(false)
     const [mapTheme, setMapTheme] = useState<'light' | 'dark'>('light')
     const [viewMode, setViewMode] = useState<MapViewMode>('2d')
+    // MapLibre kontrollerinin toplam yüksekliğini takip et
+    const [ctrlBottomOffset, setCtrlBottomOffset] = useState(180)
 
     // Get current style config
     const getCurrentStyle = useCallback(() => {
@@ -234,6 +241,17 @@ export default function MapView({ userLocation, visibleUsers, isSignalActive }: 
         map.current.setBearing(currentStyle.bearing)
     }, [mapTheme, viewMode, mapLoaded, getCurrentStyle])
 
+    // MapLibre sağ üst kontrollerin toplam yüksekliğini ölç
+    useEffect(() => {
+        if (!mapContainer.current || !mapLoaded) return
+        const ctrlContainer = mapContainer.current.querySelector('.maplibregl-ctrl-top-right')
+        if (ctrlContainer) {
+            const height = (ctrlContainer as HTMLElement).offsetHeight
+            // 8px minimum boşluk + kontrol yüksekliği
+            setCtrlBottomOffset(height + 8)
+        }
+    }, [mapLoaded])
+
     // Update center when user location changes
     useEffect(() => {
         if (!map.current || !userLocation || !mapLoaded) return
@@ -247,48 +265,30 @@ export default function MapView({ userLocation, visibleUsers, isSignalActive }: 
         })
     }, [userLocation, mapLoaded, getCurrentStyle])
 
-    // Create marker element
+    // Marker elementi oluştur
     const createMarkerElement = useCallback((user: VisibleUser, isCurrentUser: boolean) => {
         const el = document.createElement('div')
         el.className = 'marker-container'
 
         if (isCurrentUser) {
-            el.innerHTML = `
-        <div class="relative">
-          <div class="w-14 h-14 rounded-full bg-gradient-to-br from-yellow-400 to-amber-500 flex items-center justify-center shadow-lg shadow-yellow-400/40 border-3 border-white">
-            <svg class="w-7 h-7 text-black" fill="currentColor" viewBox="0 0 20 20">
-              <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
-            </svg>
-          </div>
-          <div class="absolute -bottom-1 left-1/2 transform -translate-x-1/2 bg-yellow-400 text-black text-[11px] px-3 py-1 rounded-full whitespace-nowrap font-bold border-2 border-white">
-            Sen
-          </div>
-          <div class="absolute inset-0 w-14 h-14 rounded-full bg-yellow-400 animate-ping opacity-40"></div>
-        </div>
-      `
+            el.innerHTML = buildCurrentUserMarkerHtml({
+                vehicleBrand: userVehicleBrand,
+                avatarUrl: userAvatarUrl,
+                nickname: userNickname,
+                statusMessage: userStatusMessage,
+            })
         } else {
-            const safeNickname = escapeHtml(user.nickname || 'Sürücü')
             const safeBrand = user.vehicle_brand ? escapeHtml(user.vehicle_brand) : ''
             const safeModel = user.vehicle_model ? escapeHtml(user.vehicle_model) : ''
+            const safeNickname = escapeHtml(user.nickname || 'Sürücü')
             const safeStatusMessage = user.status_message ? escapeHtml(user.status_message) : ''
-            const brandSlug = getBrandSlug(user.vehicle_brand)
 
-            el.innerHTML = `
-        <div class="relative cursor-pointer group">
-          <div class="w-14 h-14 rounded-full bg-gradient-to-br from-yellow-400/30 to-amber-500/30 backdrop-blur-md border-3 border-yellow-400/70 flex items-center justify-center shadow-lg shadow-yellow-400/30 transition-transform group-hover:scale-110 overflow-hidden bg-black/50">
-            <img src="/vehicles/brands/${brandSlug}.png" alt="${safeBrand}" class="w-9 h-9 object-contain" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSI+PHJlY3Qgd2lkdGg9IjI4IiBoZWlnaHQ9IjE4IiB4PSIzIiByeT0iMiIgZmlsbD0iI2Y1YiIvPjwvc3ZnPg=='">
-          </div>
-          <div class="absolute -bottom-1 left-1/2 transform -translate-x-1/2 bg-black/90 backdrop-blur-md text-yellow-400 text-[11px] px-3 py-1 rounded-full whitespace-nowrap font-bold border-2 border-yellow-400/50">
-            ${safeNickname}
-          </div>
-          ${safeStatusMessage ? `
-            <div class="absolute -top-16 left-1/2 transform -translate-x-1/2 bg-black/95 backdrop-blur-md text-white text-xs px-3 py-2 rounded-xl whitespace-nowrap border border-yellow-400/40 shadow-lg max-w-[180px] truncate z-10">
-              💬 ${safeStatusMessage}
-              <div class="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2 rotate-45 w-2 h-2 bg-black/95 border-r border-b border-yellow-400/40"></div>
-            </div>
-          ` : ''}
-        </div>
-      `
+            el.innerHTML = buildOtherUserMarkerHtml({
+                nickname: user.nickname,
+                vehicleBrand: user.vehicle_brand,
+                vehicleModel: user.vehicle_model,
+                statusMessage: user.status_message,
+            })
 
             ;(el as any).dataset.safeBrand = safeBrand
             ;(el as any).dataset.safeModel = safeModel
@@ -297,7 +297,7 @@ export default function MapView({ userLocation, visibleUsers, isSignalActive }: 
         }
 
         return el
-    }, [mapTheme])
+    }, [mapTheme, userVehicleBrand, userAvatarUrl, userNickname, userStatusMessage])
 
     // Update user markers
     useEffect(() => {
@@ -356,7 +356,7 @@ export default function MapView({ userLocation, visibleUsers, isSignalActive }: 
         })
     }, [visibleUsers, mapLoaded, mapTheme, createMarkerElement])
 
-    // Update current user marker
+    // Mevcut kullanıcı marker'ını güncelle
     useEffect(() => {
         if (!map.current || !mapLoaded || !userLocation || !isSignalActive) {
             if (userMarker.current) {
@@ -366,21 +366,23 @@ export default function MapView({ userLocation, visibleUsers, isSignalActive }: 
             return
         }
 
+        // Marker'ı her zaman yeniden oluştur (props değişebilir)
         if (userMarker.current) {
-            userMarker.current.setLngLat([userLocation.lon, userLocation.lat])
-        } else {
-            const el = createMarkerElement({
-                user_id: 'current',
-                lat: userLocation.lat,
-                lon: userLocation.lon,
-                nickname: 'Sen',
-                expires_at: '',
-            }, true)
-
-            userMarker.current = new maplibregl.Marker({ element: el })
-                .setLngLat([userLocation.lon, userLocation.lat])
-                .addTo(map.current!)
+            userMarker.current.remove()
+            userMarker.current = null
         }
+
+        const el = createMarkerElement({
+            user_id: 'current',
+            lat: userLocation.lat,
+            lon: userLocation.lon,
+            nickname: userNickname || 'Sen',
+            expires_at: '',
+        }, true)
+
+        userMarker.current = new maplibregl.Marker({ element: el })
+            .setLngLat([userLocation.lon, userLocation.lat])
+            .addTo(map.current!)
 
         return () => {
             if (userMarker.current) {
@@ -394,10 +396,10 @@ export default function MapView({ userLocation, visibleUsers, isSignalActive }: 
         <div className="relative w-full h-full">
             <div ref={mapContainer} className="w-full h-full" />
 
-            {/* Map Controls - Single Glass Panel */}
-            <div className="absolute top-4 right-4 z-10">
+            {/* Özel Kontroller - MapLibre kontrollerinin altında, en az 8px boşlukla */}
+            <div className="absolute right-[10px] z-10" style={{ top: `${ctrlBottomOffset}px` }}>
                 <div className="bg-black/70 backdrop-blur-xl rounded-2xl p-2 border border-yellow-400/20 shadow-xl flex gap-2">
-                    {/* Theme Toggle */}
+                    {/* Tema Değiştirme */}
                     <button
                         onClick={() => setMapTheme(mapTheme === 'dark' ? 'light' : 'dark')}
                         className="w-12 h-12 rounded-xl flex items-center justify-center transition-all hover:bg-yellow-400/20 group relative"
@@ -410,7 +412,7 @@ export default function MapView({ userLocation, visibleUsers, isSignalActive }: 
                         )}
                     </button>
 
-                    {/* View Mode Toggle */}
+                    {/* 2D/3D Geçişi */}
                     <button
                         onClick={() => setViewMode(viewMode === '2d' ? '3d' : '2d')}
                         className="px-4 h-12 rounded-xl flex items-center justify-center transition-all font-bold text-sm bg-gradient-to-r from-yellow-400/80 to-amber-500/80 text-black hover:from-yellow-400 hover:to-amber-500"
@@ -420,8 +422,8 @@ export default function MapView({ userLocation, visibleUsers, isSignalActive }: 
                 </div>
             </div>
 
-            {/* Traffic Indicator */}
-            <div className="absolute top-4 left-4 z-10 bg-black/70 backdrop-blur-xl rounded-xl px-4 py-2 border border-yellow-400/20 shadow-lg">
+            {/* Trafik Göstergesi - Sol üst, diğer kontrollerle çakışmaz */}
+            <div className="absolute top-[10px] left-[10px] z-10 bg-black/70 backdrop-blur-xl rounded-xl px-4 py-2 border border-yellow-400/20 shadow-lg">
                 <div className="flex items-center gap-3">
                     <div className="flex items-center gap-2">
                         <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
@@ -464,52 +466,4 @@ export default function MapView({ userLocation, visibleUsers, isSignalActive }: 
     )
 }
 
-// Helper function to escape HTML
-function escapeHtml(unsafe: string): string {
-    return unsafe
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;")
-}
-
-// Helper function to get brand slug
-function getBrandSlug(brand?: string): string {
-    if (!brand) return 'default'
-
-    const brandMap: Record<string, string> = {
-        'mercedes': 'mercedes-benz', 'mercedes-benz': 'mercedes-benz',
-        'bmw': 'bmw', 'audi': 'audi', 'audi-sport': 'audi-sport',
-        'porsche': 'porsche', 'ferrari': 'ferrari', 'lamborghini': 'lamborghini',
-        'maserati': 'maserati', 'toyota': 'toyota', 'honda': 'honda',
-        'nissan': 'nissan', 'nissan-gt-r': 'nissan-gt-r', 'mazda': 'mazda',
-        'subaru': 'subaru', 'mitsubishi': 'mitsubishi', 'ford': 'ford',
-        'ford-mustang': 'ford-mustang', 'chevrolet': 'chevrolet',
-        'chevrolet-corvette': 'chevrolet-corvette', 'dodge': 'dodge',
-        'dodge-viper': 'dodge-viper', 'jeep': 'jeep', 'tesla': 'tesla',
-        'volkswagen': 'volkswagen', 'volvo': 'volvo', 'kia': 'kia',
-        'hyundai': 'hyundai', 'lexus': 'lexus', 'infiniti': 'infiniti',
-        'acura': 'acura', 'alfa-romeo': 'alfa-romeo', 'aston-martin': 'aston-martin',
-        'bentley': 'bentley', 'bugatti': 'bugatti', 'cadillac': 'cadillac',
-        'chery': 'chery', 'chrysler': 'chrysler', 'citroen': 'citroen',
-        'cupra': 'cupra', 'dacia': 'dacia', 'daewoo': 'daewoo', 'daf': 'daf',
-        'daihatsu': 'daihatsu', 'ds': 'ds', 'fiat': 'fiat', 'gmc': 'gmc',
-        'hummer': 'hummer', 'hupmobile': 'hupmobile', 'isuzu': 'isuzu',
-        'iveco': 'iveco', 'jaguar': 'jaguar', 'jawa': 'jawa',
-        'ktm': 'ktm', 'lada': 'lada', 'lagonda': 'lagonda', 'lancia': 'lancia',
-        'land-rover': 'land-rover', 'lincoln': 'lincoln', 'lotus': 'lotus',
-        'lynk-and-co': 'lynk-and-co', 'man': 'man', 'maybach': 'maybach',
-        'mclaren': 'mclaren', 'mercedes-amg': 'mercedes-amg', 'mg': 'mg',
-        'mini': 'mini', 'opel': 'opel', 'pagani': 'pagani', 'peugeot': 'peugeot',
-        'pontiac': 'pontiac', 'proton': 'proton', 'renault': 'renault',
-        'rolls-royce': 'rolls-royce', 'rover': 'rover', 'saab': 'saab',
-        'scania': 'scania', 'seat': 'seat', 'skoda': 'skoda', 'smart': 'smart',
-        'ssangyong': 'ssangyong', 'suzuki': 'suzuki', 'tata': 'tata',
-        'abarth': 'abarth', 'brabus': 'brabus', 'brilliance': 'brilliance',
-        'byd': 'byd',
-    }
-
-    const brandLower = brand.toLowerCase().trim()
-    return brandMap[brandLower] || brandLower.replace(/\s+/g, '-')
-}
+// getBrandSlug ve marker yardımcıları @/lib/utils/ modüllerinden import ediliyor

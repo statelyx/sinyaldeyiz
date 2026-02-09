@@ -71,50 +71,67 @@ export default function DashboardPage() {
         }
     }, [])
 
-    // Initial load and real-time subscription for instant updates
+    // İlk yükleme ve realtime subscription
     useEffect(() => {
         fetchVisibleUsers()
 
-        // Set up real-time subscription for instant updates
+        // Realtime subscription ile anlık güncellemeler
         const supabase = createSupabase()
+        let pollingInterval: ReturnType<typeof setInterval> | null = null
+
         const channel = supabase
             .channel('dashboard-location-changes')
             .on(
                 'postgres_changes',
                 {
-                    event: '*', // Listen to all changes (INSERT, UPDATE, DELETE)
+                    event: '*',
                     schema: 'public',
                     table: 'location_status'
                 },
                 (payload) => {
                     console.log('🔄 Dashboard: Location change detected:', payload)
-                    // Fetch all visible users when any change occurs
                     fetchVisibleUsers()
                 }
             )
             .subscribe((status) => {
                 if (status === 'SUBSCRIBED') {
                     console.log('✅ Dashboard: Realtime subscription active')
+                    // Subscription başarılı, polling varsa durdur
+                    if (pollingInterval) {
+                        clearInterval(pollingInterval)
+                        pollingInterval = null
+                    }
                 }
                 if (status === 'CHANNEL_ERROR') {
-                    console.error('❌ Dashboard: Realtime subscription failed')
+                    console.error('❌ Dashboard: Realtime subscription failed, fallback polling başlatılıyor')
+                    // Fallback: 30 saniyede bir polling yap
+                    if (!pollingInterval) {
+                        pollingInterval = setInterval(() => {
+                            fetchVisibleUsers()
+                        }, 30000)
+                    }
                 }
             })
 
-        // Cleanup subscription on unmount
         return () => {
             console.log('🔌 Dashboard: Unsubscribing from realtime')
             supabase.removeChannel(channel)
+            if (pollingInterval) {
+                clearInterval(pollingInterval)
+            }
         }
     }, [fetchVisibleUsers])
 
-    // Handle signal status change
+    // Sinyal durumu değiştiğinde
     const handleSignalChange = (active: boolean, location?: { lat: number; lon: number }) => {
         setIsSignalActive(active)
         if (location) {
             setUserLocation(location)
         }
-        fetchVisibleUsers()
+        // Supabase'e yazma işleminin tamamlanması için 500ms gecikme
+        setTimeout(() => {
+            fetchVisibleUsers()
+        }, 500)
     }
 
     // Get user location on mount
@@ -199,6 +216,9 @@ export default function DashboardPage() {
                     userLocation={userLocation}
                     visibleUsers={visibleUsers}
                     isSignalActive={isSignalActive}
+                    userVehicleBrand={profile?.avatar_url?.includes('/vehicles/brands/') ? profile.avatar_url.replace('/vehicles/brands/', '').replace('.png', '') : undefined}
+                    userAvatarUrl={profile?.avatar_url || undefined}
+                    userNickname={profile?.nickname || undefined}
                 />
 
                 {/* Guest Mode Blur Overlay */}

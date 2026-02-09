@@ -7,6 +7,7 @@ import { WeatherWidgets } from '@/components/dashboard/weather-widgets'
 import { HotspotDetector } from '@/components/dashboard/hotspot-detector'
 import { getVisibleUsers, type VisibleUser } from '@/lib/services/location-service'
 import { createSupabase } from '@/lib/supabase/client'
+import { useAuth } from '@/components/providers/supabase-provider'
 
 const MapView = dynamic(() => import('@/components/dashboard/map-view'), {
     ssr: false,
@@ -21,6 +22,7 @@ const MapView = dynamic(() => import('@/components/dashboard/map-view'), {
 })
 
 export default function MapPage() {
+    const { profile } = useAuth()
     const [isSignalActive, setIsSignalActive] = useState(false)
     const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null)
     const [visibleUsers, setVisibleUsers] = useState<VisibleUser[]>([])
@@ -32,39 +34,53 @@ export default function MapPage() {
             console.log('📍 Visible users fetched:', users.length)
         }
 
-        // Initial fetch
+        // İlk yükleme
         fetchUsers()
 
-        // Set up real-time subscription for instant updates
+        // Realtime subscription ile anlık güncellemeler
         const supabase = createSupabase()
+        let pollingInterval: ReturnType<typeof setInterval> | null = null
+
         const channel = supabase
             .channel('location-status-changes')
             .on(
                 'postgres_changes',
                 {
-                    event: '*', // Listen to all changes (INSERT, UPDATE, DELETE)
+                    event: '*',
                     schema: 'public',
                     table: 'location_status'
                 },
                 (payload) => {
                     console.log('🔄 Location change detected:', payload)
-                    // Fetch all visible users when any change occurs
                     fetchUsers()
                 }
             )
             .subscribe((status) => {
                 if (status === 'SUBSCRIBED') {
                     console.log('✅ Realtime subscription active')
+                    // Subscription başarılı, polling varsa durdur
+                    if (pollingInterval) {
+                        clearInterval(pollingInterval)
+                        pollingInterval = null
+                    }
                 }
                 if (status === 'CHANNEL_ERROR') {
-                    console.error('❌ Realtime subscription failed')
+                    console.error('❌ Realtime subscription failed, fallback polling başlatılıyor')
+                    // Fallback: 30 saniyede bir polling yap
+                    if (!pollingInterval) {
+                        pollingInterval = setInterval(() => {
+                            fetchUsers()
+                        }, 30000)
+                    }
                 }
             })
 
-        // Cleanup subscription on unmount
         return () => {
             console.log('🔌 Unsubscribing from realtime')
             supabase.removeChannel(channel)
+            if (pollingInterval) {
+                clearInterval(pollingInterval)
+            }
         }
     }, [])
 
@@ -73,6 +89,11 @@ export default function MapPage() {
         if (location) {
             setUserLocation(location)
         }
+        // Supabase'e yazma işleminin tamamlanması için 500ms gecikme
+        setTimeout(async () => {
+            const users = await getVisibleUsers()
+            setVisibleUsers(users)
+        }, 500)
     }
 
     return (
@@ -93,6 +114,9 @@ export default function MapPage() {
                     isSignalActive={isSignalActive}
                     userLocation={userLocation}
                     visibleUsers={visibleUsers}
+                    userVehicleBrand={profile?.avatar_url?.includes('/vehicles/brands/') ? profile.avatar_url.replace('/vehicles/brands/', '').replace('.png', '') : undefined}
+                    userAvatarUrl={profile?.avatar_url || undefined}
+                    userNickname={profile?.nickname || undefined}
                 />
             </div>
 

@@ -63,6 +63,8 @@ export default function ProfilePage() {
     const [nicknameChangedCount, setNicknameChangedCount] = useState(0)
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
     const [deleteLoading, setDeleteLoading] = useState(false)
+    const [avatarError, setAvatarError] = useState(false)
+    const [pickerErrors, setPickerErrors] = useState<Set<string>>(new Set())
 
     // Load nickname change count
     useEffect(() => {
@@ -78,6 +80,7 @@ export default function ProfilePage() {
     const handleAvatarChange = async (newAvatar: string) => {
         if (!user) return
         setAvatar(newAvatar)
+        setAvatarError(false)
         setError('')
         setSuccess('')
 
@@ -217,11 +220,12 @@ export default function ProfilePage() {
                             >
                                 <div className="w-28 h-28 rounded-full bg-gradient-to-br from-yellow-400 via-orange-500 to-red-500 p-1 ring-4 ring-yellow-400/30 shadow-lg shadow-yellow-500/20 group-hover:ring-yellow-400/50 transition-all">
                                     <div className="w-full h-full rounded-full bg-black/90 backdrop-blur-xl flex items-center justify-center overflow-hidden">
-                                        {avatar.startsWith('/vehicles/') ? (
+                                        {avatar.startsWith('/vehicles/') && !avatarError ? (
                                             <img
                                                 src={avatar}
                                                 alt="Avatar"
-                                                className="w-full h-full object-cover"
+                                                className="w-3/4 h-3/4 object-contain p-1"
+                                                onError={() => setAvatarError(true)}
                                             />
                                         ) : avatar.startsWith('http') ? (
                                             <img
@@ -232,6 +236,8 @@ export default function ProfilePage() {
                                                     ;(e.target as HTMLImageElement).src = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23fbbf24"><circle cx="12" cy="8" r="4"/><path d="M12 14c-6 0-8 4-8 4v2h16v-2s-2-4-8-4z"/></svg>')
                                                 }}
                                             />
+                                        ) : avatarError && avatar.startsWith('/vehicles/') ? (
+                                            <span className="text-5xl">🚗</span>
                                         ) : (
                                             <span className="text-5xl">{avatar}</span>
                                         )}
@@ -406,23 +412,18 @@ export default function ProfilePage() {
                                             }`}
                                         >
                                             <div className="w-full h-full flex items-center justify-center">
-                                                <img
-                                                    src={vehicle.path}
-                                                    alt={vehicle.brand}
-                                                    className="max-w-full max-h-full object-contain filter drop-shadow-lg"
-                                                    onError={(e) => {
-                                                        // Fallback to default icon
-                                                        const target = e.target as HTMLImageElement
-                                                        target.style.display = 'none'
-                                                        const parent = target.parentElement
-                                                        if (parent && !parent.querySelector('.fallback-icon')) {
-                                                            const fallback = document.createElement('span')
-                                                            fallback.className = 'fallback-icon text-2xl'
-                                                            fallback.textContent = '🚗'
-                                                            parent.appendChild(fallback)
-                                                        }
-                                                    }}
-                                                />
+                                                {pickerErrors.has(vehicle.path) ? (
+                                                    <span className="text-2xl">🚗</span>
+                                                ) : (
+                                                    <img
+                                                        src={vehicle.path}
+                                                        alt={vehicle.brand}
+                                                        className="max-w-full max-h-full object-contain filter drop-shadow-lg"
+                                                        onError={() => {
+                                                            setPickerErrors(prev => new Set(prev).add(vehicle.path))
+                                                        }}
+                                                    />
+                                                )}
                                             </div>
                                             {/* Tooltip/label */}
                                             <div className="absolute bottom-0 left-0 right-0 bg-black/80 backdrop-blur-sm text-xs text-white/80 text-center py-1 rounded-b-xl opacity-0 group-hover:opacity-100 transition-opacity">
