@@ -209,7 +209,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         )
 
         return () => subscription.unsubscribe()
-      } catch (err) {
+      } catch (err: any) {
+        // AbortError genellikle React Strict Mode veya component unmount'tan kaynaklanır
+        // Bu durumda session'ı hemen unauthenticated yapma, tekrar dene
+        if (err?.name === 'AbortError' || err?.message?.includes('aborted')) {
+          console.warn('Auth initialization aborted, retrying...', err)
+          // Kısa bir gecikme sonrası tekrar dene
+          setTimeout(async () => {
+            try {
+              const supabase = createSupabase()
+              const { data: { session } } = await supabase.auth.getSession()
+              if (session?.user) {
+                setUser(session.user)
+                setSession(session)
+                let profileData = await fetchProfile(session.user.id)
+                if (!profileData) {
+                  profileData = await createInitialProfile(session.user)
+                }
+                setProfile(profileData)
+                updateAuthState(session.user, profileData)
+              } else {
+                setAuthState('unauthenticated')
+              }
+            } catch {
+              setAuthState('unauthenticated')
+            } finally {
+              setLoading(false)
+            }
+          }, 500)
+          return
+        }
         console.error('Auth initialization failed:', err)
         setLoading(false)
         setAuthState('unauthenticated')

@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
-import { useRouter, usePathname } from 'next/navigation'
+import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/components/providers/supabase-provider'
 import { TopBar } from '@/components/layout/top-bar'
 
@@ -9,9 +9,18 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { profile, loading, authState, isOnboarded, signOut } = useAuth()
   const router = useRouter()
   const pathname = usePathname()
+  const searchParams = useSearchParams()
+
+  // Auth callback'ten dönen kullanıcıyı kontrol et
+  const isAuthCallback = searchParams.get('auth') === 'success' || searchParams.get('auth') === 'new' || searchParams.get('auth') === 'returning'
 
   useEffect(() => {
     if (!loading) {
+      // Auth callback'ten dönüyorsa yönlendirme yapma, session'ın oturmasını bekle
+      if (isAuthCallback && authState === 'unauthenticated') {
+        return
+      }
+
       // Kimlik doğrulama durumuna göre yönlendirme
       if (authState === 'unauthenticated') {
         router.push('/')
@@ -24,7 +33,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         return
       }
     }
-  }, [authState, loading, router, pathname])
+  }, [authState, loading, router, pathname, isAuthCallback])
 
   // Yükleme durumu
   if (loading) {
@@ -38,8 +47,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     )
   }
 
-  // Giriş yapılmamışsa render etme
-  if (authState === 'unauthenticated') {
+  // Giriş yapılmamışsa render etme (auth callback hariç)
+  if (authState === 'unauthenticated' && !isAuthCallback) {
     return null
   }
 

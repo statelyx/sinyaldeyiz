@@ -57,6 +57,19 @@ export async function middleware(request: NextRequest) {
 
   // If user is not logged in and trying to access protected route (except onboarding)
   if (isProtectedPath && !user && !isOnboardingPath) {
+    // Auth callback'ten dönen kullanıcıları engelleme — cookie henüz set edilmemiş olabilir
+    const authParam = request.nextUrl.searchParams.get('auth')
+    if (authParam === 'success' || authParam === 'new' || authParam === 'returning') {
+      console.log('Middleware: Auth callback redirect, allowing access')
+      return supabaseResponse
+    }
+
+    // Guest cookie kontrolü
+    const isGuestCookie = request.cookies.get('sinyaldeyiz_guest')?.value === 'true'
+    if (isGuestCookie) {
+      return supabaseResponse
+    }
+
     console.log('Middleware: Redirecting unauthenticated user to /')
     const redirectUrl = new URL('/', request.url)
     return NextResponse.redirect(redirectUrl)
