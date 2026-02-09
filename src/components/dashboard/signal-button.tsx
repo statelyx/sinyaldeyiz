@@ -13,6 +13,7 @@ import type { LocationData } from '@/lib/services/location-service'
 interface SignalButtonProps {
     onSignalChange: (active: boolean, location?: { lat: number; lon: number }) => void
     isMobile?: boolean
+    initialLocation?: { lat: number; lon: number } | null
 }
 
 type DurationOption = 10 | 30 | 60
@@ -23,7 +24,7 @@ const DURATION_OPTIONS: { value: DurationOption; label: string; description: str
     { value: 60, label: '1 saat', description: 'Uzun süreli' },
 ]
 
-export function SignalButton({ onSignalChange, isMobile = false }: SignalButtonProps) {
+export function SignalButton({ onSignalChange, isMobile = false, initialLocation }: SignalButtonProps) {
     const [isActive, setIsActive] = useState(false)
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -33,10 +34,19 @@ export function SignalButton({ onSignalChange, isMobile = false }: SignalButtonP
     const [selectedDuration, setSelectedDuration] = useState<DurationOption>(60)
     const [statusMessage, setStatusMessage] = useState('')
     const [showStatusInput, setShowStatusInput] = useState(false)
-    const [lastKnownLocation, setLastKnownLocation] = useState<LocationData | null>(null)
+    const [lastKnownLocation, setLastKnownLocation] = useState<LocationData | null>(
+        initialLocation ? { lat: initialLocation.lat, lon: initialLocation.lon } : null
+    )
     const [usedFallback, setUsedFallback] = useState(false)
     const [fallbackMessage, setFallbackMessage] = useState<string | null>(null)
     const [loadingProgress, setLoadingProgress] = useState<string>('')
+
+    // initialLocation değiştiğinde lastKnownLocation'ı güncelle
+    useEffect(() => {
+        if (initialLocation) {
+            setLastKnownLocation({ lat: initialLocation.lat, lon: initialLocation.lon })
+        }
+    }, [initialLocation])
 
     // Check initial status
     useEffect(() => {

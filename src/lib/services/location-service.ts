@@ -210,7 +210,7 @@ export async function getVisibleUsers(): Promise<VisibleUser[]> {
         const supabase = createSupabase()
         const now = new Date().toISOString()
 
-        // Önce basit sorgu dene - vehicles join'i 400 hatası verebilir
+        // Önce profiles join'li sorgu dene
         const { data, error } = await supabase
             .from('location_status')
             .select(`
@@ -219,8 +219,7 @@ export async function getVisibleUsers(): Promise<VisibleUser[]> {
         lon,
         expires_at,
         status_message,
-        status_expires_at,
-        profiles!inner(nickname, avatar_url)
+        status_expires_at
       `)
             .eq('is_visible', true)
             .not('lat', 'is', null)
@@ -232,11 +231,26 @@ export async function getVisibleUsers(): Promise<VisibleUser[]> {
             return []
         }
 
-        if (!data) return []
+        if (!data || data.length === 0) return []
+
+        // Kullanıcı ID'lerini topla ve profilleri ayrı sorgula
+        const userIds = data.map((item: any) => item.user_id)
+        const { data: profiles } = await supabase
+            .from('profiles')
+            .select('id, nickname, avatar_url')
+            .in('id', userIds)
+
+        // Profilleri map'e çevir
+        const profileMap: Record<string, { nickname: string | null; avatar_url: string | null }> = {}
+        if (profiles) {
+            profiles.forEach((p: any) => {
+                profileMap[p.id] = { nickname: p.nickname, avatar_url: p.avatar_url }
+            })
+        }
 
         return data.map((item: any) => {
-            // Avatar URL'den marka bilgisini çıkar
-            const avatarUrl = item.profiles?.avatar_url || ''
+            const profile = profileMap[item.user_id]
+            const avatarUrl = profile?.avatar_url || ''
             let vehicleBrand = ''
             if (avatarUrl.startsWith('/vehicles/brands/')) {
                 vehicleBrand = avatarUrl.replace('/vehicles/brands/', '').replace('.png', '')
@@ -246,7 +260,7 @@ export async function getVisibleUsers(): Promise<VisibleUser[]> {
                 user_id: item.user_id,
                 lat: item.lat,
                 lon: item.lon,
-                nickname: item.profiles?.nickname || 'Anonim',
+                nickname: profile?.nickname || 'Anonim',
                 vehicle_brand: vehicleBrand || undefined,
                 vehicle_model: undefined,
                 expires_at: item.expires_at,

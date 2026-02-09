@@ -1,9 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useAuth } from '@/components/providers/supabase-provider'
+import { checkSignalStatus, getVisibleUsers } from '@/lib/services/location-service'
 
 // Navigasyon öğeleri
 export const navItems = [
@@ -14,15 +15,32 @@ export const navItems = [
   { href: '/profile', label: 'Profil', icon: '👤' },
 ]
 
-interface TopBarProps {
-  isSignalActive?: boolean
-  visibleUsersCount?: number
-}
-
-export function TopBar({ isSignalActive = false, visibleUsersCount = 0 }: TopBarProps) {
+export function TopBar() {
   const { profile, isGuest, signOut } = useAuth()
   const pathname = usePathname()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [isSignalActive, setIsSignalActive] = useState(false)
+  const [visibleUsersCount, setVisibleUsersCount] = useState(0)
+
+  // Sinyal durumunu ve aktif kullanıcı sayısını periyodik olarak kontrol et
+  useEffect(() => {
+    const fetchStatus = async () => {
+      try {
+        const [signalStatus, users] = await Promise.all([
+          checkSignalStatus(),
+          getVisibleUsers(),
+        ])
+        setIsSignalActive(signalStatus.isActive)
+        setVisibleUsersCount(users.length)
+      } catch {
+        // Sessizce devam et
+      }
+    }
+
+    fetchStatus()
+    const interval = setInterval(fetchStatus, 10000) // 10 saniyede bir güncelle
+    return () => clearInterval(interval)
+  }, [])
 
   // Çıkış işlemi
   const handleSignOut = async () => {

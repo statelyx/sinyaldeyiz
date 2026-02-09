@@ -187,12 +187,12 @@ export default function DashboardPage() {
 
             {/* Sinyal butonu — harita üzerinde sağ alt köşede floating */}
             <div className="absolute bottom-6 right-6 z-10">
-                <SignalButton onSignalChange={handleSignalChange} isMobile />
+                <SignalButton onSignalChange={handleSignalChange} isMobile initialLocation={userLocation} />
             </div>
 
             {/* Masaüstü sinyal butonu — sol alt köşede daha geniş versiyon */}
             <div className="absolute bottom-6 left-6 hidden lg:block z-10">
-                <SignalButton onSignalChange={handleSignalChange} />
+                <SignalButton onSignalChange={handleSignalChange} initialLocation={userLocation} />
             </div>
 
             {/* Misafir karşılama modalı */}
