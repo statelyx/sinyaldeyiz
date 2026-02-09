@@ -140,8 +140,8 @@ export default function DashboardPage() {
 
     return (
         // Harita-merkezli tam ekran düzen: TopBar altındaki tüm alanı kaplar
-        // Mobilde TopBar 48px (h-12), masaüstünde 56px (h-14)
-        <div className="h-[calc(100vh-48px)] lg:h-[calc(100vh-56px)] relative">
+        // dvh kullanarak mobil tarayıcı toolbar'ını hesaba katıyoruz
+        <div className="h-[calc(100dvh-48px)] lg:h-[calc(100dvh-56px)] relative overflow-hidden">
             {/* Harita — tam ekran arka plan */}
             <MapView
                 userLocation={userLocation}
@@ -178,15 +178,15 @@ export default function DashboardPage() {
                 <HotspotDetector visibleUsers={visibleUsers} />
             </div>
 
-            {/* Hava durumu widget'ları — harita üzerinde sol üst glassmorphism overlay */}
-            <div className="absolute top-3 left-3 z-10 max-w-[calc(100vw-100px)] lg:max-w-md">
-                <div className="bg-black/30 backdrop-blur-xl rounded-xl border border-white/10 p-2">
+            {/* Hava durumu widget'ları — harita üzerinde sol üst, mobilde kompakt */}
+            <div className="absolute top-2 left-2 z-10 max-w-[calc(100vw-60px)] lg:max-w-md">
+                <div className="bg-black/40 backdrop-blur-xl rounded-xl border border-white/10 p-1.5 lg:p-2">
                     <WeatherWidgets location={userLocation} />
                 </div>
             </div>
 
-            {/* Sinyal butonu — harita üzerinde sağ alt köşede floating */}
-            <div className="absolute bottom-6 right-6 z-10">
+            {/* Sinyal butonu — mobilde safe area ile, sağ alt köşede */}
+            <div className="absolute z-30 right-4 lg:hidden" style={{ bottom: 'max(16px, env(safe-area-inset-bottom, 16px))' }}>
                 <SignalButton onSignalChange={handleSignalChange} isMobile initialLocation={userLocation} />
             </div>
 

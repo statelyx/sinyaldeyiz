@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   description: 'Araba sahipleri için konum tabanlı sosyal ağ, sözlük ve garaj profili',
   manifest: '/manifest.json',
   themeColor: '#000000',
-  viewport: 'width=device-width, initial-scale=1, maximum-scale=1',
+  viewport: 'width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',

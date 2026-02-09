@@ -71,7 +71,7 @@ export async function startSignal(
             lat: location.lat,
             lon: location.lon,
             geohash,
-            accuracy_meters: location.accuracy_meters || null,
+            accuracy_meters: location.accuracy_meters ? Math.round(location.accuracy_meters) : null,
             last_location_update: now.toISOString(),
             updated_at: now.toISOString(),
             status_message: statusMessage || null,
@@ -298,7 +298,7 @@ export async function updateLocation(location: LocationData): Promise<{ success:
             lat: location.lat,
             lon: location.lon,
             geohash,
-            accuracy_meters: location.accuracy_meters || null,
+            accuracy_meters: location.accuracy_meters ? Math.round(location.accuracy_meters) : null,
             last_location_update: new Date().toISOString(),
             updated_at: new Date().toISOString(),
         }
