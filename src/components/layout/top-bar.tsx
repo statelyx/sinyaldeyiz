@@ -121,9 +121,15 @@ export function TopBar() {
             </button>
           </div>
 
-          {/* Mobil: Sinyal durumu ikonu + hamburger menü */}
-          <div className="flex lg:hidden items-center gap-3">
-            {/* Mobil sinyal durumu */}
+          {/* Mobil: Aktif sayısı + sinyal durumu + hamburger menü */}
+          <div className="flex lg:hidden items-center gap-2">
+            {/* Aktif kullanıcı sayısı */}
+            <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-yellow-500/10 border border-yellow-500/20">
+              <span className="text-[10px]">📡</span>
+              <span className="text-[10px] font-bold text-yellow-400">{visibleUsersCount}</span>
+            </div>
+
+            {/* Sinyal durumu */}
             <div className={`w-2.5 h-2.5 rounded-full ${isSignalActive ? 'bg-green-400 animate-pulse' : 'bg-white/30'}`} />
 
             {/* Hamburger menü butonu */}

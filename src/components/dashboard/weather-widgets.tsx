@@ -41,9 +41,9 @@ export function WeatherWidgets({ location }: WeatherWidgetsProps) {
 
     if (loading) {
         return (
-            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-                {[1, 2, 3, 4].map((i) => (
-                    <div key={i} className="flex-shrink-0 w-24 h-20 bg-white/5 rounded-xl animate-pulse" />
+            <div className="flex items-center gap-2">
+                {[1, 2, 3].map((i) => (
+                    <div key={i} className="w-20 h-8 bg-white/5 rounded-lg animate-pulse" />
                 ))}
             </div>
         )
@@ -51,16 +51,16 @@ export function WeatherWidgets({ location }: WeatherWidgetsProps) {
 
     if (!location) {
         return (
-            <div className="bg-white/5 rounded-xl p-4 text-center">
-                <p className="text-white/60 text-sm">📍 Hava durumu için konum gerekli</p>
+            <div className="flex items-center gap-1.5 px-2 py-1 text-white/40 text-xs">
+                <span>📍</span> Konum bekleniyor...
             </div>
         )
     }
 
     if (error || !weather) {
         return (
-            <div className="bg-white/5 rounded-xl p-4 text-center">
-                <p className="text-white/60 text-sm">⚠️ Hava durumu yüklenemedi</p>
+            <div className="flex items-center gap-1.5 px-2 py-1 text-white/40 text-xs">
+                <span>⚠️</span> Hava durumu yüklenemedi
             </div>
         )
     }
@@ -69,53 +69,44 @@ export function WeatherWidgets({ location }: WeatherWidgetsProps) {
     const asphaltColorClass = getAsphaltColor(weather.asphaltCondition)
 
     return (
-        <div className="flex gap-2 lg:gap-3 overflow-x-auto pb-1 scrollbar-hide">
-            {/* Temperature Widget */}
-            <div className="flex-shrink-0 bg-black/60 backdrop-blur-xl rounded-lg lg:rounded-xl p-2 lg:p-4 min-w-[80px] lg:min-w-[100px] border border-white/10">
-                <div className="text-xl lg:text-3xl mb-0.5 lg:mb-1">{weather.weatherIcon}</div>
-                <div className="text-lg lg:text-2xl font-bold text-white">{weather.temperature}°</div>
-                <div className="text-[10px] lg:text-xs text-white/60 mt-0.5 truncate">{weather.weatherCondition}</div>
+        <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide whitespace-nowrap">
+            {/* Sıcaklık */}
+            <div className="inline-flex items-center gap-1.5 px-2 py-1 bg-white/5 rounded-lg border border-white/5">
+                <span className="text-base">{weather.weatherIcon}</span>
+                <span className="text-sm font-bold text-white">{weather.temperature}°</span>
+                <span className="text-[10px] text-white/50">{weather.weatherCondition}</span>
             </div>
 
-            {/* Asphalt Condition Widget */}
-            <div className="flex-shrink-0 bg-black/60 backdrop-blur-xl rounded-lg lg:rounded-xl p-2 lg:p-4 min-w-[80px] lg:min-w-[100px] border border-white/10">
-                <div className="text-xl lg:text-2xl mb-0.5 lg:mb-1">🛣️</div>
-                <div className={`text-xs lg:text-sm font-bold px-1.5 py-0.5 rounded-full inline-block ${asphaltColorClass}`}>
-                    {weather.asphaltCondition}
-                </div>
-                <div className="text-[10px] lg:text-xs text-white/60 mt-0.5">Asfalt</div>
+            {/* Asfalt */}
+            <div className="inline-flex items-center gap-1.5 px-2 py-1 bg-white/5 rounded-lg border border-white/5">
+                <span className="text-base">🛣️</span>
+                <span className={`text-xs font-bold ${asphaltColorClass}`}>{weather.asphaltCondition}</span>
             </div>
 
-            {/* Cabrio Index Widget */}
-            <div className="flex-shrink-0 bg-black/60 backdrop-blur-xl rounded-lg lg:rounded-xl p-2 lg:p-4 min-w-[80px] lg:min-w-[100px] border border-white/10">
-                <div className="text-xl lg:text-2xl mb-0.5 lg:mb-1">{cabrioInfo.emoji}</div>
-                <div className="flex items-baseline gap-0.5">
-                    <span className={`text-lg lg:text-2xl font-bold ${cabrioInfo.color}`}>{weather.cabrioIndex}</span>
-                    <span className="text-[10px] lg:text-xs text-white/40">/100</span>
-                </div>
-                <div className="text-[10px] lg:text-xs text-white/60 mt-0.5">Cabrio</div>
+            {/* Cabrio */}
+            <div className="inline-flex items-center gap-1.5 px-2 py-1 bg-white/5 rounded-lg border border-white/5">
+                <span className="text-base">{cabrioInfo.emoji}</span>
+                <span className={`text-sm font-bold ${cabrioInfo.color}`}>{weather.cabrioIndex}</span>
+                <span className="text-[10px] text-white/40">/100</span>
             </div>
 
-            {/* Wind Widget — masaüstünde göster */}
-            <div className="flex-shrink-0 bg-black/60 backdrop-blur-xl rounded-lg lg:rounded-xl p-2 lg:p-4 min-w-[80px] lg:min-w-[100px] border border-white/10 hidden sm:block">
-                <div className="text-xl lg:text-2xl mb-0.5 lg:mb-1">💨</div>
-                <div className="text-base lg:text-lg font-bold text-white">{weather.windSpeed} <span className="text-[10px] lg:text-sm text-white/60">km/s</span></div>
-                <div className="text-[10px] lg:text-xs text-white/60 mt-0.5">Rüzgar</div>
+            {/* Rüzgar */}
+            <div className="inline-flex items-center gap-1.5 px-2 py-1 bg-white/5 rounded-lg border border-white/5 hidden sm:inline-flex">
+                <span className="text-base">💨</span>
+                <span className="text-xs font-bold text-white">{weather.windSpeed} km/s</span>
             </div>
 
-            {/* Humidity Widget — masaüstünde göster */}
-            <div className="flex-shrink-0 bg-black/60 backdrop-blur-xl rounded-lg lg:rounded-xl p-2 lg:p-4 min-w-[80px] lg:min-w-[100px] border border-white/10 hidden sm:block">
-                <div className="text-xl lg:text-2xl mb-0.5 lg:mb-1">💧</div>
-                <div className="text-base lg:text-lg font-bold text-white">{weather.humidity}<span className="text-[10px] lg:text-sm text-white/60">%</span></div>
-                <div className="text-[10px] lg:text-xs text-white/60 mt-0.5">Nem</div>
+            {/* Nem */}
+            <div className="inline-flex items-center gap-1.5 px-2 py-1 bg-white/5 rounded-lg border border-white/5 hidden sm:inline-flex">
+                <span className="text-base">💧</span>
+                <span className="text-xs font-bold text-white">{weather.humidity}%</span>
             </div>
 
-            {/* Rain Warning (if applicable) */}
+            {/* Yağış uyarısı */}
             {weather.isRaining && (
-                <div className="flex-shrink-0 bg-gradient-to-br from-blue-600/30 to-blue-800/30 backdrop-blur-xl rounded-lg lg:rounded-xl p-2 lg:p-4 min-w-[80px] lg:min-w-[100px] border border-blue-500/50">
-                    <div className="text-xl lg:text-2xl mb-0.5 lg:mb-1">🌧️</div>
-                    <div className="text-xs lg:text-sm font-bold text-blue-400">Yağış</div>
-                    <div className="text-[10px] lg:text-xs text-blue-300 mt-0.5">Dikkat</div>
+                <div className="inline-flex items-center gap-1.5 px-2 py-1 bg-blue-500/10 rounded-lg border border-blue-500/20">
+                    <span className="text-base">🌧️</span>
+                    <span className="text-xs font-bold text-blue-400">Yağış</span>
                 </div>
             )}
         </div>
