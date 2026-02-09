@@ -237,7 +237,7 @@ export default function HomePage() {
             {/* Badge */}
             <div className="mb-6 px-4 py-2 rounded-full bg-white/5 backdrop-blur-xl border border-white/10 flex items-center gap-2">
               <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-              <span className="text-sm text-white/70 font-medium">Türkiye'nin ilk konum bazlı araç sosyal ağı</span>
+              <span className="text-sm text-white/70 font-medium">Türkiye&apos;nin ilk konum bazlı araç sosyal ağı</span>
             </div>
 
             {/* Main Headline */}

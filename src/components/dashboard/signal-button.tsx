@@ -1,7 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import { createSupabase } from '@/lib/supabase/client'
+import { useState, useEffect } from 'react'
 import {
     startSignal,
     stopSignal,
@@ -9,7 +8,6 @@ import {
     requestGeolocation,
     updateLocation
 } from '@/lib/services/location-service'
-import { setStatus, clearStatus } from '@/lib/services/status-service'
 
 interface SignalButtonProps {
     onSignalChange: (active: boolean, location?: { lat: number; lon: number }) => void

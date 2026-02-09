@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/components/providers/supabase-provider'
 import { createSupabase } from '@/lib/supabase/client'
-import type { SupabaseClient } from '@supabase/supabase-js'
 
 // Vehicle brands that can be used as avatars - all using PNG icons
 const VEHICLE_AVATARS = [

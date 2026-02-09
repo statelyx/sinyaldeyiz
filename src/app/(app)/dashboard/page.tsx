@@ -38,7 +38,7 @@ export default function DashboardPage() {
     const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null)
     const [visibleUsers, setVisibleUsers] = useState<VisibleUser[]>([])
     const [isSignalActive, setIsSignalActive] = useState(false)
-    const [loading, setLoading] = useState(true)
+    const [, setLoading] = useState(true)
     const [greeting] = useState(() => greetings[Math.floor(Math.random() * greetings.length)])
     const [showGuestModal, setShowGuestModal] = useState(false)
 

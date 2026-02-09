@@ -1,6 +1,5 @@
 'use client'
 
-import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 
 interface GuestWelcomeModalProps {
@@ -50,7 +49,7 @@ export function GuestWelcomeModal({ isOpen, onClose }: GuestWelcomeModalProps) {
                         Hoş Geldin!
                     </h2>
                     <p className="text-white/60 text-sm">
-                        Sinyaldeyiz'e misafir olarak göz atıyorsun
+                        Sinyaldeyiz&apos;e misafir olarak göz atıyorsun
                     </p>
                 </div>
 
@@ -62,7 +61,7 @@ export function GuestWelcomeModal({ isOpen, onClose }: GuestWelcomeModalProps) {
                             <h3 className="font-bold text-white">Sinyaldeyiz Nedir?</h3>
                         </div>
                         <p className="text-white/70 text-sm">
-                            Türkiye'nin ilk konum bazlı araç sosyal ağı. Araba ve motor tutkunlarını bir araya getiriyoruz.
+                            Türkiye&apos;nin ilk konum bazlı araç sosyal ağı. Araba ve motor tutkunlarını bir araya getiriyoruz.
                         </p>
                     </div>
 

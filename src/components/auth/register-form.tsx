@@ -131,7 +131,7 @@ export function RegisterForm() {
 
       <div className="mt-4 p-4 bg-slate-800/50 rounded-lg border border-slate-700">
         <p className="text-sm text-slate-400">
-          🔒 Kayıt olarak <Link href="/privacy" className="text-yellow-400 hover:underline">Gizlilik Politikası</Link>'nı kabul etmiş olursunuz.
+          🔒 Kayıt olarak <Link href="/privacy" className="text-yellow-400 hover:underline">Gizlilik Politikası</Link>&apos;nı kabul etmiş olursunuz.
           Konum bilgileriniz varsayılan olarak gizlidir.
         </p>
       </div>

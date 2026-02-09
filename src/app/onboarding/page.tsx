@@ -442,7 +442,7 @@ export default function OnboardingPage() {
                   </select>
                   {brands.length === 0 && !loadingData && (
                     <p className="text-yellow-400 text-xs mt-2">
-                      ⚠️ Supabase'de migration çalıştırın: 003_comprehensive_schema_v2.sql
+                      ⚠️ Supabase&apos;de migration çalıştırın: 003_comprehensive_schema_v2.sql
                     </p>
                   )}
                 </div>
