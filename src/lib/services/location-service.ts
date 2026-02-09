@@ -210,6 +210,7 @@ export async function getVisibleUsers(): Promise<VisibleUser[]> {
         const supabase = createSupabase()
         const now = new Date().toISOString()
 
+        // Önce basit sorgu dene - vehicles join'i 400 hatası verebilir
         const { data, error } = await supabase
             .from('location_status')
             .select(`
@@ -219,12 +220,7 @@ export async function getVisibleUsers(): Promise<VisibleUser[]> {
         expires_at,
         status_message,
         status_expires_at,
-        profiles!inner(nickname),
-        vehicles(
-          catalog_id,
-          is_primary,
-          vehicle_catalog(marka, model)
-        )
+        profiles!inner(nickname, avatar_url)
       `)
             .eq('is_visible', true)
             .not('lat', 'is', null)
@@ -239,15 +235,20 @@ export async function getVisibleUsers(): Promise<VisibleUser[]> {
         if (!data) return []
 
         return data.map((item: any) => {
-            const primaryVehicle = item.vehicles?.find((v: any) => v.is_primary) || item.vehicles?.[0]
+            // Avatar URL'den marka bilgisini çıkar
+            const avatarUrl = item.profiles?.avatar_url || ''
+            let vehicleBrand = ''
+            if (avatarUrl.startsWith('/vehicles/brands/')) {
+                vehicleBrand = avatarUrl.replace('/vehicles/brands/', '').replace('.png', '')
+            }
 
             return {
                 user_id: item.user_id,
                 lat: item.lat,
                 lon: item.lon,
                 nickname: item.profiles?.nickname || 'Anonim',
-                vehicle_brand: primaryVehicle?.vehicle_catalog?.marka,
-                vehicle_model: primaryVehicle?.vehicle_catalog?.model,
+                vehicle_brand: vehicleBrand || undefined,
+                vehicle_model: undefined,
                 expires_at: item.expires_at,
                 status_message: item.status_message,
                 status_expires_at: item.status_expires_at,
