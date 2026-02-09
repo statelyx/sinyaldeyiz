@@ -1,18 +1,26 @@
 'use client'
 
-import { useEffect } from 'react'
-import { useRouter, usePathname, useSearchParams } from 'next/navigation'
+import { useEffect, useState } from 'react'
+import { useRouter, usePathname } from 'next/navigation'
 import { useAuth } from '@/components/providers/supabase-provider'
 import { TopBar } from '@/components/layout/top-bar'
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const { profile, loading, authState, isOnboarded, signOut } = useAuth()
+  const { loading, authState, isOnboarded } = useAuth()
   const router = useRouter()
   const pathname = usePathname()
-  const searchParams = useSearchParams()
+  const [isAuthCallback, setIsAuthCallback] = useState(false)
 
-  // Auth callback'ten dönen kullanıcıyı kontrol et
-  const isAuthCallback = searchParams.get('auth') === 'success' || searchParams.get('auth') === 'new' || searchParams.get('auth') === 'returning'
+  // Auth callback kontrolü — window.location üzerinden (useSearchParams yerine)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      const authParam = params.get('auth')
+      if (authParam === 'success' || authParam === 'new' || authParam === 'returning') {
+        setIsAuthCallback(true)
+      }
+    }
+  }, [])
 
   useEffect(() => {
     if (!loading) {
@@ -64,12 +72,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-slate-950">
-      {/* TopBar bileşeni — sidebar yerine üst menü */}
       <TopBar />
-
-      {/* Ana içerik — tam genişlik, TopBar altında */}
       <main className="relative z-10">
-        {/* TopBar yüksekliği kadar boşluk: mobil 48px, masaüstü 56px */}
         <div className="h-12 lg:h-14" />
         {children}
       </main>
