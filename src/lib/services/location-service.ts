@@ -312,7 +312,56 @@ function generateSimpleGeohash(lat: number, lon: number): string {
 }
 
 /**
- * Get geolocation from browser
+ * Konum hatası türlerini tanımlayan arayüz
+ */
+export interface GeolocationFallbackResult {
+    location: LocationData
+    /** Yedek konum kullanıldıysa true */
+    usedFallback: boolean
+    /** Yedek konum kullanıldıysa orijinal hata mesajı */
+    fallbackReason?: string
+}
+
+/**
+ * Konum isteği sonucunu fallback mantığıyla işleyen saf fonksiyon.
+ * Property-based test için doğrudan test edilebilir.
+ * @param locationPromise - Konum isteği promise'i
+ * @param lastKnownLocation - Son bilinen konum (yedek olarak kullanılacak)
+ */
+export async function resolveLocationWithFallback(
+    locationPromise: Promise<LocationData>,
+    lastKnownLocation?: LocationData | null
+): Promise<GeolocationFallbackResult> {
+    try {
+        const location = await locationPromise
+        return { location, usedFallback: false }
+    } catch (error: any) {
+        // Hata durumunda son bilinen konum varsa yedek olarak kullan
+        if (lastKnownLocation) {
+            return {
+                location: lastKnownLocation,
+                usedFallback: true,
+                fallbackReason: error.message || 'Konum alınamadı',
+            }
+        }
+        // Son bilinen konum yoksa hatayı fırlat
+        throw error
+    }
+}
+
+/**
+ * requestGeolocation fonksiyonunu sarmalayan yedekli konum isteği.
+ * Timeout veya hata durumunda son bilinen konumu yedek olarak döndürür.
+ * @param lastKnownLocation - Son bilinen konum (yedek olarak kullanılacak)
+ */
+export async function requestGeolocationWithFallback(
+    lastKnownLocation?: LocationData | null
+): Promise<GeolocationFallbackResult> {
+    return resolveLocationWithFallback(requestGeolocation(), lastKnownLocation)
+}
+
+/**
+ * Tarayıcıdan konum bilgisi al
  */
 export function requestGeolocation(): Promise<LocationData> {
     return new Promise((resolve, reject) => {

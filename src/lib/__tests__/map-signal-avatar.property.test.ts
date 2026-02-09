@@ -55,7 +55,7 @@ describe('Property 2: Sinyal başlatma veri bütünlüğü', () => {
                 fc.double({ min: -90, max: 90, noNaN: true }),       // lat
                 fc.double({ min: -180, max: 180, noNaN: true }),     // lon
                 fc.constantFrom(...VALID_DURATIONS),                  // süre
-                fc.date({ min: new Date('2020-01-01'), max: new Date('2030-12-31') }), // başlangıç zamanı
+                fc.date({ min: new Date('2020-01-01'), max: new Date('2030-12-31'), noInvalidDate: true }), // başlangıç zamanı
                 (lat: number, lon: number, durationMinutes: number, now: Date) => {
                     // Süre geçerli olmalı
                     expect(isValidDuration(durationMinutes)).toBe(true)

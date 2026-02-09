@@ -5,9 +5,10 @@ import {
     startSignal,
     stopSignal,
     checkSignalStatus,
-    requestGeolocation,
+    requestGeolocationWithFallback,
     updateLocation
 } from '@/lib/services/location-service'
+import type { LocationData } from '@/lib/services/location-service'
 
 interface SignalButtonProps {
     onSignalChange: (active: boolean, location?: { lat: number; lon: number }) => void
@@ -32,6 +33,10 @@ export function SignalButton({ onSignalChange, isMobile = false }: SignalButtonP
     const [selectedDuration, setSelectedDuration] = useState<DurationOption>(60)
     const [statusMessage, setStatusMessage] = useState('')
     const [showStatusInput, setShowStatusInput] = useState(false)
+    const [lastKnownLocation, setLastKnownLocation] = useState<LocationData | null>(null)
+    const [usedFallback, setUsedFallback] = useState(false)
+    const [fallbackMessage, setFallbackMessage] = useState<string | null>(null)
+    const [loadingProgress, setLoadingProgress] = useState<string>('')
 
     // Check initial status
     useEffect(() => {
@@ -100,28 +105,42 @@ export function SignalButton({ onSignalChange, isMobile = false }: SignalButtonP
 
     const handleStartSignal = async () => {
         setError(null)
+        setUsedFallback(false)
+        setFallbackMessage(null)
         setLoading(true)
+        setLoadingProgress('Konum alınıyor...')
 
         try {
-            // Request geolocation
-            const location = await requestGeolocation()
+            // Yedekli konum isteği — son bilinen konum varsa fallback olarak kullanılır
+            const result = await requestGeolocationWithFallback(lastKnownLocation)
 
-            // Start signal with selected duration and status message
-            const result = await startSignal(location, selectedDuration, statusMessage.trim() || undefined)
+            if (result.usedFallback) {
+                setUsedFallback(true)
+                setFallbackMessage(result.fallbackReason || 'Son bilinen konum kullanıldı')
+            }
 
-            if (result.success) {
+            setLoadingProgress('Sinyal başlatılıyor...')
+
+            // Son bilinen konumu güncelle
+            setLastKnownLocation(result.location)
+
+            // Seçilen süre ve durum mesajı ile sinyal başlat
+            const signalResult = await startSignal(result.location, selectedDuration, statusMessage.trim() || undefined)
+
+            if (signalResult.success) {
                 setIsActive(true)
                 const expires = new Date(Date.now() + selectedDuration * 60 * 1000)
                 setExpiresAt(expires)
-                onSignalChange(true, { lat: location.lat, lon: location.lon })
-                setStatusMessage('') // Clear status message input
+                onSignalChange(true, { lat: result.location.lat, lon: result.location.lon })
+                setStatusMessage('')
             } else {
-                setError(result.error || 'Sinyal başlatılamadı')
+                setError(signalResult.error || 'Sinyal başlatılamadı')
             }
         } catch (err: any) {
             setError(err.message || 'Bir hata oluştu')
         } finally {
             setLoading(false)
+            setLoadingProgress('')
             setShowConfirm(false)
         }
     }
@@ -217,7 +236,19 @@ export function SignalButton({ onSignalChange, isMobile = false }: SignalButtonP
 
                             {error && (
                                 <div className="mb-4 p-3 bg-red-500/20 border border-red-500 rounded-lg text-red-400 text-sm">
-                                    {error}
+                                    <p>{error}</p>
+                                    <button
+                                        onClick={handleStartSignal}
+                                        className="mt-2 w-full py-2 bg-red-500/30 hover:bg-red-500/40 text-red-300 rounded-lg text-xs font-medium transition-colors"
+                                    >
+                                        🔄 Yeniden Dene
+                                    </button>
+                                </div>
+                            )}
+
+                            {usedFallback && fallbackMessage && !error && (
+                                <div className="mb-4 p-3 bg-yellow-500/20 border border-yellow-500/40 rounded-lg text-yellow-300 text-sm">
+                                    ⚠️ {fallbackMessage} — son bilinen konum kullanıldı.
                                 </div>
                             )}
 
@@ -234,7 +265,14 @@ export function SignalButton({ onSignalChange, isMobile = false }: SignalButtonP
                                     disabled={loading}
                                     className="flex-1 py-3 bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white rounded-lg font-bold transition-colors disabled:opacity-50"
                                 >
-                                    {loading ? 'Yükleniyor...' : 'Sinyal Ver'}
+                                    {loading ? (
+                                        <span className="flex items-center justify-center gap-2">
+                                            <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                            {loadingProgress || 'Yükleniyor...'}
+                                        </span>
+                                    ) : (
+                                        'Sinyal Ver'
+                                    )}
                                 </button>
                             </div>
                         </div>
@@ -272,12 +310,24 @@ export function SignalButton({ onSignalChange, isMobile = false }: SignalButtonP
         )
     }
 
-    // Desktop version
+    // Masaüstü versiyonu
     return (
         <div className="space-y-3">
             {error && (
                 <div className="p-3 bg-red-500/20 border border-red-500 rounded-lg text-red-400 text-sm max-w-xs">
-                    {error}
+                    <p>{error}</p>
+                    <button
+                        onClick={handleStartSignal}
+                        className="mt-2 w-full py-2 bg-red-500/30 hover:bg-red-500/40 text-red-300 rounded-lg text-xs font-medium transition-colors"
+                    >
+                        🔄 Yeniden Dene
+                    </button>
+                </div>
+            )}
+
+            {usedFallback && fallbackMessage && !error && (
+                <div className="p-3 bg-yellow-500/20 border border-yellow-500/40 rounded-lg text-yellow-300 text-sm max-w-xs">
+                    ⚠️ {fallbackMessage} — son bilinen konum kullanıldı.
                 </div>
             )}
 
@@ -384,7 +434,19 @@ export function SignalButton({ onSignalChange, isMobile = false }: SignalButtonP
 
                         {error && (
                             <div className="mb-4 p-3 bg-red-500/20 border border-red-500 rounded-lg text-red-400 text-sm">
-                                {error}
+                                <p>{error}</p>
+                                <button
+                                    onClick={handleStartSignal}
+                                    className="mt-2 w-full py-2 bg-red-500/30 hover:bg-red-500/40 text-red-300 rounded-lg text-xs font-medium transition-colors"
+                                >
+                                    🔄 Yeniden Dene
+                                </button>
+                            </div>
+                        )}
+
+                        {usedFallback && fallbackMessage && !error && (
+                            <div className="mb-4 p-3 bg-yellow-500/20 border border-yellow-500/40 rounded-lg text-yellow-300 text-sm">
+                                ⚠️ {fallbackMessage} — son bilinen konum kullanıldı.
                             </div>
                         )}
 
@@ -404,7 +466,7 @@ export function SignalButton({ onSignalChange, isMobile = false }: SignalButtonP
                                 {loading ? (
                                     <span className="flex items-center justify-center gap-2">
                                         <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                        Yükleniyor...
+                                        {loadingProgress || 'Yükleniyor...'}
                                     </span>
                                 ) : (
                                     '🚨 Sinyal Ver'

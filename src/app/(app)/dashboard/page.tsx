@@ -11,7 +11,7 @@ import type { VisibleUser } from '@/lib/services/location-service'
 import { getVisibleUsers } from '@/lib/services/location-service'
 import { createSupabase } from '@/lib/supabase/client'
 
-// Dynamic import for map (requires browser APIs)
+// Harita bileşeni dinamik import (tarayıcı API'leri gerektirir)
 const MapView = dynamic(() => import('@/components/dashboard/map-view'), {
     ssr: false,
     loading: () => (
@@ -24,25 +24,15 @@ const MapView = dynamic(() => import('@/components/dashboard/map-view'), {
     ),
 })
 
-// Dynamic greeting messages
-const greetings = [
-    { emoji: '🏎️', text: 'Gazı veriyoruz' },
-    { emoji: '🏁', text: 'Kontağı çeviriyoruz' },
-    { emoji: '🚀', text: 'Motor sıcak' },
-    { emoji: '⚡', text: 'Pist hazır' },
-    { emoji: '🔥', text: 'Yollar seninle güzel' },
-]
-
 export default function DashboardPage() {
-    const { user, profile, isGuest } = useAuth()
+    const { profile, isGuest } = useAuth()
     const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null)
     const [visibleUsers, setVisibleUsers] = useState<VisibleUser[]>([])
     const [isSignalActive, setIsSignalActive] = useState(false)
     const [, setLoading] = useState(true)
-    const [greeting] = useState(() => greetings[Math.floor(Math.random() * greetings.length)])
     const [showGuestModal, setShowGuestModal] = useState(false)
-
-    // Check for first-time guest visit
+ 
+   // İlk ziyaret kontrolü (misafir kullanıcılar için)
     useEffect(() => {
         if (typeof window !== 'undefined') {
             const getCookie = (name: string) => {
@@ -56,16 +46,13 @@ export default function DashboardPage() {
         }
     }, [])
 
-    // Get nickname or fallback
-    const displayName = profile?.nickname || user?.email?.split('@')[0] || (isGuest ? 'Misafir' : 'Sürücü')
-
-    // Fetch visible users
+    // Görünür kullanıcıları getir
     const fetchVisibleUsers = useCallback(async () => {
         try {
             const users = await getVisibleUsers()
             setVisibleUsers(users)
         } catch (error) {
-            console.error('Error fetching visible users:', error)
+            console.error('Görünür kullanıcılar alınırken hata:', error)
         } finally {
             setLoading(false)
         }
@@ -75,7 +62,6 @@ export default function DashboardPage() {
     useEffect(() => {
         fetchVisibleUsers()
 
-        // Realtime subscription ile anlık güncellemeler
         const supabase = createSupabase()
         let pollingInterval: ReturnType<typeof setInterval> | null = null
 
@@ -89,22 +75,20 @@ export default function DashboardPage() {
                     table: 'location_status'
                 },
                 (payload) => {
-                    console.log('🔄 Dashboard: Location change detected:', payload)
+                    console.log('🔄 Dashboard: Konum değişikliği algılandı:', payload)
                     fetchVisibleUsers()
                 }
             )
             .subscribe((status) => {
                 if (status === 'SUBSCRIBED') {
-                    console.log('✅ Dashboard: Realtime subscription active')
-                    // Subscription başarılı, polling varsa durdur
+                    console.log('✅ Dashboard: Realtime abonelik aktif')
                     if (pollingInterval) {
                         clearInterval(pollingInterval)
                         pollingInterval = null
                     }
                 }
                 if (status === 'CHANNEL_ERROR') {
-                    console.error('❌ Dashboard: Realtime subscription failed, fallback polling başlatılıyor')
-                    // Fallback: 30 saniyede bir polling yap
+                    console.error('❌ Dashboard: Realtime abonelik başarısız, fallback polling başlatılıyor')
                     if (!pollingInterval) {
                         pollingInterval = setInterval(() => {
                             fetchVisibleUsers()
@@ -114,27 +98,27 @@ export default function DashboardPage() {
             })
 
         return () => {
-            console.log('🔌 Dashboard: Unsubscribing from realtime')
+            console.log('🔌 Dashboard: Realtime abonelik sonlandırılıyor')
             supabase.removeChannel(channel)
             if (pollingInterval) {
                 clearInterval(pollingInterval)
             }
         }
     }, [fetchVisibleUsers])
-
-    // Sinyal durumu değiştiğinde
+ 
+   // Sinyal durumu değiştiğinde
     const handleSignalChange = (active: boolean, location?: { lat: number; lon: number }) => {
         setIsSignalActive(active)
         if (location) {
             setUserLocation(location)
         }
-        // Supabase'e yazma işleminin tamamlanması için 500ms gecikme
+        // Supabase'e yazma işleminin tamamlanması için kısa gecikme
         setTimeout(() => {
             fetchVisibleUsers()
         }, 500)
     }
 
-    // Get user location on mount
+    // Sayfa yüklendiğinde kullanıcı konumunu al
     useEffect(() => {
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
@@ -145,8 +129,9 @@ export default function DashboardPage() {
                     })
                 },
                 (error) => {
-                    console.log('Geolocation error:', error.message)
-                    setUserLocation({ lat: 41.0082, lon: 28.9784 }) // Istanbul
+                    console.log('Konum hatası:', error.message)
+                    // Varsayılan: İstanbul
+                    setUserLocation({ lat: 41.0082, lon: 28.9784 })
                 },
                 { enableHighAccuracy: true, timeout: 10000 }
             )
@@ -154,136 +139,63 @@ export default function DashboardPage() {
     }, [])
 
     return (
-        <div className="h-[calc(100vh-4rem)] lg:h-screen flex flex-col">
-            {/* Racing HUD Header */}
-            <div className="relative p-4 bg-black/40 backdrop-blur-xl border-b border-white/5 overflow-hidden">
-                {/* Top glow line */}
-                <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-yellow-400/50 to-transparent" />
+        // Harita-merkezli tam ekran düzen: TopBar altındaki tüm alanı kaplar
+        // Mobilde TopBar 48px (h-12), masaüstünde 56px (h-14)
+        <div className="h-[calc(100vh-48px)] lg:h-[calc(100vh-56px)] relative">
+            {/* Harita — tam ekran arka plan */}
+            <MapView
+                userLocation={userLocation}
+                visibleUsers={visibleUsers}
+                isSignalActive={isSignalActive}
+                userVehicleBrand={profile?.avatar_url?.includes('/vehicles/brands/') ? profile.avatar_url.replace('/vehicles/brands/', '').replace('.png', '') : undefined}
+                userAvatarUrl={profile?.avatar_url || undefined}
+                userNickname={profile?.nickname || undefined}
+            />
 
-                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                    {/* Greeting Section */}
-                    <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center text-3xl shadow-lg shadow-yellow-500/30">
-                            {greeting.emoji}
-                        </div>
-                        <div>
-                            <h1 className="text-xl font-black text-white">
-                                {greeting.text}, <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-500">{displayName}</span>!
-                            </h1>
-                            <p className="text-white/50 text-sm">
-                                {isGuest ? (
-                                    <span className="flex items-center gap-1">
-                                        <span className="text-yellow-400">👤</span> Misafir olarak geziyorsun
-                                    </span>
-                                ) : (
-                                    'Bugün kimler sinyalde bakalım 🏁'
-                                )}
-                            </p>
-                        </div>
-                    </div>
-
-                    {/* HUD Stats - Desktop */}
-                    <div className="hidden lg:flex items-center gap-3">
-                        {/* Signal Status Chip */}
-                        <div className={`px-5 py-2.5 rounded-xl border flex items-center gap-2.5 text-sm font-bold transition-all ${isSignalActive
-                            ? 'bg-green-500/10 border-green-500/30 text-green-400'
-                            : 'bg-white/5 border-white/10 text-white/50'
-                            }`}>
-                            <span className={`w-2.5 h-2.5 rounded-full ${isSignalActive ? 'bg-green-400 animate-pulse' : 'bg-white/30'}`} />
-                            {isSignalActive ? 'SIGNAL ON' : 'SIGNAL OFF'}
-                        </div>
-
-                        {/* Active Users */}
-                        <div className="px-5 py-2.5 rounded-xl bg-yellow-500/10 border border-yellow-500/30 flex items-center gap-2.5 text-sm font-bold text-yellow-400">
-                            <span>📡</span>
-                            <span>{visibleUsers.length} aktif</span>
-                        </div>
+            {/* Misafir modu bulanıklaştırma overlay'i */}
+            {isGuest && (
+                <div className="absolute inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-20">
+                    <div className="text-center p-8 max-w-md">
+                        <div className="text-7xl mb-6">🔒</div>
+                        <h3 className="text-3xl font-bold text-white mb-3">
+                            Misafir Modu
+                        </h3>
+                        <p className="text-white/70 mb-8 text-lg">
+                            Haritayı görmek ve sinyal vermek için giriş yapmalısın
+                        </p>
+                        <button
+                            onClick={() => window.location.href = '/'}
+                            className="px-8 py-4 bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-300 hover:to-orange-400 text-black font-bold text-lg rounded-xl transition-all shadow-lg shadow-yellow-500/30"
+                        >
+                            🏁 Giriş Yap
+                        </button>
                     </div>
                 </div>
+            )}
 
-                {/* Weather Widgets - Compact */}
-                <div className="mt-4">
+            {/* Hotspot uyarısı — harita üzerinde üst kısımda overlay */}
+            <div className="absolute top-0 left-0 right-0 z-10">
+                <HotspotDetector visibleUsers={visibleUsers} />
+            </div>
+
+            {/* Hava durumu widget'ları — harita üzerinde sol üst glassmorphism overlay */}
+            <div className="absolute top-3 left-3 z-10 max-w-[calc(100vw-100px)] lg:max-w-md">
+                <div className="bg-black/30 backdrop-blur-xl rounded-xl border border-white/10 p-2">
                     <WeatherWidgets location={userLocation} />
                 </div>
             </div>
 
-            {/* Hotspot Alert */}
-            <HotspotDetector visibleUsers={visibleUsers} />
-
-            {/* Map Section */}
-            <div className="flex-1 relative">
-                <MapView
-                    userLocation={userLocation}
-                    visibleUsers={visibleUsers}
-                    isSignalActive={isSignalActive}
-                    userVehicleBrand={profile?.avatar_url?.includes('/vehicles/brands/') ? profile.avatar_url.replace('/vehicles/brands/', '').replace('.png', '') : undefined}
-                    userAvatarUrl={profile?.avatar_url || undefined}
-                    userNickname={profile?.nickname || undefined}
-                />
-
-                {/* Guest Mode Blur Overlay */}
-                {isGuest && (
-                    <div className="absolute inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-10">
-                        <div className="text-center p-8 max-w-md">
-                            <div className="text-7xl mb-6">🔒</div>
-                            <h3 className="text-3xl font-bold text-white mb-3">
-                                Misafir Modu
-                            </h3>
-                            <p className="text-white/70 mb-8 text-lg">
-                                Haritayı görmek ve sinyal vermek için giriş yapmalısın
-                            </p>
-                            <button
-                                onClick={() => window.location.href = '/'}
-                                className="px-8 py-4 bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-300 hover:to-orange-400 text-black font-bold text-lg rounded-xl transition-all shadow-lg shadow-yellow-500/30"
-                            >
-                                🏁 Giriş Yap
-                            </button>
-                        </div>
-                    </div>
-                )}
-
-                {/* Desktop Signal Button */}
-                <div className="absolute bottom-6 left-6 hidden lg:block">
-                    <SignalButton onSignalChange={handleSignalChange} />
-                </div>
-
-                {/* Mobile Floating Action Button */}
-                <div className="absolute bottom-6 right-6 lg:hidden z-30">
-                    <SignalButton onSignalChange={handleSignalChange} isMobile />
-                </div>
+            {/* Sinyal butonu — harita üzerinde sağ alt köşede floating */}
+            <div className="absolute bottom-6 right-6 z-10">
+                <SignalButton onSignalChange={handleSignalChange} isMobile />
             </div>
 
-            {/* Mobile Stats Bar - Racing HUD Style */}
-            <div className="lg:hidden bg-black/40 backdrop-blur-xl border-t border-white/5 px-4 py-3">
-                <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-4">
-                        {/* Signal Indicator */}
-                        <div className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold uppercase ${isSignalActive
-                            ? 'bg-green-500/10 text-green-400'
-                            : 'bg-white/5 text-white/40'
-                            }`}>
-                            <span className={`w-2 h-2 rounded-full ${isSignalActive ? 'bg-green-400 animate-pulse' : 'bg-white/30'}`} />
-                            {isSignalActive ? 'ON' : 'OFF'}
-                        </div>
-
-                        {/* Active Users */}
-                        <div className="flex items-center gap-2 text-sm">
-                            <span className="text-yellow-400 font-black">{visibleUsers.length}</span>
-                            <span className="text-white/40">sürücü</span>
-                        </div>
-                    </div>
-
-                    {/* User Tag */}
-                    <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 text-xs border border-white/5">
-                        <span>{isGuest ? '👤' : '🏎️'}</span>
-                        <span className="text-white/70 font-medium truncate max-w-[100px]">
-                            {displayName}
-                        </span>
-                    </div>
-                </div>
+            {/* Masaüstü sinyal butonu — sol alt köşede daha geniş versiyon */}
+            <div className="absolute bottom-6 left-6 hidden lg:block z-10">
+                <SignalButton onSignalChange={handleSignalChange} />
             </div>
 
-            {/* Guest Welcome Modal */}
+            {/* Misafir karşılama modalı */}
             <GuestWelcomeModal
                 isOpen={showGuestModal}
                 onClose={() => setShowGuestModal(false)}
