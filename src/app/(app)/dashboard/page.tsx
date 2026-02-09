@@ -154,9 +154,9 @@ export default function DashboardPage() {
     }, [])
 
     return (
-        <div className="h-[calc(100vh-4rem)] lg:h-screen flex flex-col bg-black">
+        <div className="h-[calc(100vh-4rem)] lg:h-screen flex flex-col">
             {/* Racing HUD Header */}
-            <div className="relative p-4 bg-gradient-to-r from-black via-slate-900/50 to-black border-b border-white/5 overflow-hidden">
+            <div className="relative p-4 bg-black/40 backdrop-blur-xl border-b border-white/5 overflow-hidden">
                 {/* Top glow line */}
                 <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-yellow-400/50 to-transparent" />
 
@@ -247,34 +247,6 @@ export default function DashboardPage() {
                     <SignalButton onSignalChange={handleSignalChange} />
                 </div>
 
-                {/* Desktop Stats Panel - Racing Style */}
-                <div className="absolute top-4 right-4 hidden lg:block">
-                    <div className="bg-black/90 backdrop-blur-xl rounded-2xl p-5 border border-white/10 space-y-4 shadow-2xl min-w-[200px]">
-                        <h3 className="text-white font-black flex items-center gap-2 text-sm uppercase tracking-wider">
-                            <span className="w-1 h-5 bg-gradient-to-b from-yellow-400 to-orange-500 rounded-full" />
-                            Dashboard
-                        </h3>
-                        <div className="space-y-3 text-sm">
-                            <div className="flex justify-between items-center py-2 border-b border-white/5">
-                                <span className="text-white/50">Aktif Sürücü</span>
-                                <span className="text-yellow-400 font-black text-xl">{visibleUsers.length}</span>
-                            </div>
-                            <div className="flex justify-between items-center py-2 border-b border-white/5">
-                                <span className="text-white/50">Sinyal Durumu</span>
-                                <span className={`font-bold ${isSignalActive ? 'text-green-400' : 'text-white/30'}`}>
-                                    {isSignalActive ? '🟢 AKTİF' : '⚪ PASİF'}
-                                </span>
-                            </div>
-                            <div className="flex justify-between items-center py-2">
-                                <span className="text-white/50">Mod</span>
-                                <span className="text-white/70 font-medium">
-                                    {isGuest ? '👤 Misafir' : '✅ Üye'}
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
                 {/* Mobile Floating Action Button */}
                 <div className="absolute bottom-6 right-6 lg:hidden z-30">
                     <SignalButton onSignalChange={handleSignalChange} isMobile />
@@ -282,7 +254,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Mobile Stats Bar - Racing HUD Style */}
-            <div className="lg:hidden bg-black border-t border-white/5 px-4 py-3">
+            <div className="lg:hidden bg-black/40 backdrop-blur-xl border-t border-white/5 px-4 py-3">
                 <div className="flex justify-between items-center">
                     <div className="flex items-center gap-4">
                         {/* Signal Indicator */}

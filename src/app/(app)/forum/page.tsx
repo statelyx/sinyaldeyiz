@@ -97,7 +97,7 @@ export default function ForumPage() {
     }
 
     return (
-        <div className="min-h-screen bg-slate-900">
+        <div className="min-h-screen">
             {/* Header */}
             <div className="bg-slate-800 border-b border-slate-700 p-4 lg:p-6">
                 <div className="max-w-4xl mx-auto">

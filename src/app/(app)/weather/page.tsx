@@ -358,7 +358,7 @@ export default function WeatherPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-black via-yellow-950/20 to-black flex items-center justify-center">
+            <div className="min-h-screen flex items-center justify-center">
                 <div className="text-center">
                     <div className="text-6xl animate-pulse mb-4">🌤️</div>
                     <p className="text-white/60">Hava durumu yükleniyor...</p>
@@ -369,7 +369,7 @@ export default function WeatherPage() {
 
     if (error || !current) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-black via-yellow-950/20 to-black flex items-center justify-center">
+            <div className="min-h-screen flex items-center justify-center">
                 <div className="text-center">
                     <div className="text-6xl mb-4">❌</div>
                     <p className="text-red-400">{error || 'Bir hata oluştu'}</p>
@@ -387,7 +387,7 @@ export default function WeatherPage() {
     const ridingAdvices = getRidingAdvice(current)
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-black via-yellow-950/20 to-black p-4 pb-24">
+        <div className="min-h-screen p-4 pb-24">
             <div className="max-w-4xl mx-auto space-y-6">
                 {/* Header */}
                 <div className="flex items-center justify-between">

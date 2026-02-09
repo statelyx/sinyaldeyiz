@@ -73,7 +73,7 @@ export default function MessagesPage() {
     const totalUnread = conversations.reduce((sum, c) => sum + c.unread, 0);
 
     return (
-        <div className="min-h-screen bg-gradient-to-b from-black via-zinc-900 to-black">
+        <div className="min-h-screen">
             <div className="max-w-4xl mx-auto p-6">
                 {/* Header */}
                 <div className="mb-8">

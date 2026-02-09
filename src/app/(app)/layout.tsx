@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { useAuth } from '@/components/providers/supabase-provider'
 import Link from 'next/link'
-import AnimatedBackground from '@/components/ui/AnimatedBackground'
 
 
 const navItems = [
@@ -16,7 +15,7 @@ const navItems = [
 ]
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const { user, profile, loading, authState, isOnboarded, signOut } = useAuth()
+  const { profile, loading, authState, isOnboarded, signOut } = useAuth()
   const router = useRouter()
   const pathname = usePathname()
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -72,8 +71,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-black relative">
-      {/* Animated Background - Landing page theme */}
-      <AnimatedBackground />
+      {/* Giriş sayfası teması - Gradient arka plan */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none z-0" aria-hidden="true">
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-black" />
+        <div className="absolute top-[-20%] left-[-10%] w-[50vw] h-[50vw] bg-gradient-to-r from-yellow-400/20 to-orange-500/20 rounded-full blur-[120px]" />
+        <div className="absolute top-[30%] right-[-15%] w-[45vw] h-[45vw] bg-gradient-to-r from-purple-500/15 to-pink-500/15 rounded-full blur-[120px]" />
+        <div className="absolute bottom-[-20%] left-[20%] w-[55vw] h-[55vw] bg-gradient-to-r from-yellow-400/10 to-orange-500/10 rounded-full blur-[120px]" />
+      </div>
 
       {/* Desktop Sidebar */}
       <aside className={`fixed left-0 top-0 h-full w-64 bg-black/95 backdrop-blur-xl border-r border-white/5 hidden lg:flex flex-col z-40 transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
@@ -90,8 +94,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         {/* User Info */}
         <div className="p-4 border-b border-white/5">
           <div className="flex items-center gap-3 p-3 rounded-xl bg-gradient-to-r from-white/5 to-white/10 border border-white/10">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center text-2xl shadow-lg shadow-orange-500/20">
-              {profile?.avatar_url || '👤'}
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center text-2xl shadow-lg shadow-orange-500/20 overflow-hidden">
+              {profile?.avatar_url?.startsWith('/vehicles/') ? (
+                <img src={profile.avatar_url} alt="Avatar" className="w-8 h-8 object-contain" />
+              ) : (
+                <span>{profile?.avatar_url || '👤'}</span>
+              )}
             </div>
             <div>
               <p className="text-white font-semibold">{profile?.nickname || 'Kullanıcı'}</p>
@@ -147,8 +155,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </span>
         </Link>
 
-        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center text-lg">
-          {profile?.avatar_url || '👤'}
+        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center text-lg overflow-hidden">
+          {profile?.avatar_url?.startsWith('/vehicles/') ? (
+            <img src={profile.avatar_url} alt="Avatar" className="w-5 h-5 object-contain" />
+          ) : (
+            <span>{profile?.avatar_url || '👤'}</span>
+          )}
         </div>
       </header>
 
@@ -176,8 +188,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
         <div className="p-4 border-b border-white/5">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center text-xl">
-              {profile?.avatar_url || '👤'}
+            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center text-xl overflow-hidden">
+              {profile?.avatar_url?.startsWith('/vehicles/') ? (
+                <img src={profile.avatar_url} alt="Avatar" className="w-7 h-7 object-contain" />
+              ) : (
+                <span>{profile?.avatar_url || '👤'}</span>
+              )}
             </div>
             <div>
               <p className="text-white font-medium">{profile?.nickname || 'Kullanıcı'}</p>

@@ -144,8 +144,8 @@ export default function MapView({ userLocation, visibleUsers, isSignalActive, us
     const [mapLoaded, setMapLoaded] = useState(false)
     const [mapTheme, setMapTheme] = useState<'light' | 'dark'>('light')
     const [viewMode, setViewMode] = useState<MapViewMode>('2d')
-    // MapLibre kontrollerinin toplam yüksekliğini takip et
-    const [ctrlBottomOffset, setCtrlBottomOffset] = useState(180)
+    // MapLibre kontrollerinin toplam yüksekliğini takip et - sabit değer kullan
+    const ctrlBottomOffset = 200
 
     // Get current style config
     const getCurrentStyle = useCallback(() => {
@@ -240,17 +240,6 @@ export default function MapView({ userLocation, visibleUsers, isSignalActive, us
         map.current.setPitch(currentStyle.pitch)
         map.current.setBearing(currentStyle.bearing)
     }, [mapTheme, viewMode, mapLoaded, getCurrentStyle])
-
-    // MapLibre sağ üst kontrollerin toplam yüksekliğini ölç
-    useEffect(() => {
-        if (!mapContainer.current || !mapLoaded) return
-        const ctrlContainer = mapContainer.current.querySelector('.maplibregl-ctrl-top-right')
-        if (ctrlContainer) {
-            const height = (ctrlContainer as HTMLElement).offsetHeight
-            // 8px minimum boşluk + kontrol yüksekliği
-            setCtrlBottomOffset(height + 8)
-        }
-    }, [mapLoaded])
 
     // Update center when user location changes
     useEffect(() => {
@@ -460,6 +449,13 @@ export default function MapView({ userLocation, visibleUsers, isSignalActive, us
         }
         .marker-container {
           cursor: pointer;
+        }
+        .maplibregl-ctrl-top-right {
+          top: 10px !important;
+          right: 10px !important;
+        }
+        .maplibregl-ctrl-top-right .maplibregl-ctrl {
+          margin: 0 0 8px 0 !important;
         }
       `}</style>
         </div>

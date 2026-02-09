@@ -187,7 +187,7 @@ export default function ProfilePage() {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-black via-yellow-950/20 to-black p-4 lg:p-8">
+        <div className="min-h-screen p-4 lg:p-8">
             <div className="max-w-2xl mx-auto">
                 {/* Header */}
                 <div className="text-center mb-8">

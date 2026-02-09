@@ -45,7 +45,7 @@ export default function GaragePage() {
     }
 
     return (
-        <div className="min-h-screen bg-black p-4 lg:p-8">
+        <div className="min-h-screen p-4 lg:p-8">
             {/* Header */}
             <div className="flex items-center justify-between mb-8">
                 <div>
